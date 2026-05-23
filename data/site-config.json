@@ -1,0 +1,23 @@
+{
+  "brandName": "Ellbopa Music",
+  "location": "Santo Domingo RD - Invivienda / Los Mina",
+  "heroTitle": "Graba, mezcla y lanza tu proximo hit en Ellbopa Music",
+  "heroSubtitle": "Sonido urbano moderno para trap, R&B, Detroit y dembow. Produccion, grabacion, mezcla, mastering, beats, presets y servicios online con vibra premium dominicana.",
+  "heroBadge": "Studio Preview",
+  "ctaPrimary": "Reservar por WhatsApp",
+  "ctaSecondary": "Comprar beats",
+  "ctaUpload": "Subir cancion para mezclar",
+  "whatsapp": "18095903643",
+  "bankAccount": "Banreservas 9606575461",
+  "bankOwner": "Adonis Castillo",
+  "footerText": "Estudio urbano premium en Santo Domingo, RD. Grabacion, mezcla, mastering, beats, presets y servicios online.",
+  "instagram": "@ellbopastudio",
+  "primaryColor": "#e50914",
+  "goldColor": "#d9a441",
+  "artistLogos": ["TRAP", "R&B", "DETROIT", "DEMBOW", "VOCAL CHAIN", "MASTER"],
+  "testimonials": [
+    "La mezcla quedo dura y clara, lista pa Spotify.",
+    "Ellbopa me guio la grabacion y saco el color de la voz.",
+    "El beat personalizado llego con el swing exacto."
+  ]
+}

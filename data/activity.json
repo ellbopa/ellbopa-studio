@@ -1,0 +1,22 @@
+[
+  {
+    "visitorId": "visitor-1779564791840-dw9i0jh4",
+    "path": "/",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Codex/26.519.41501 Chrome/148.0.7778.97 Electron/42.1.0 Safari/537.36",
+    "email": "admin@ellbopastudio.com",
+    "name": "Adonis Castillo",
+    "role": "ADMIN",
+    "firstSeen": "2026-05-23T19:33:12.243Z",
+    "lastSeen": "2026-05-23T23:13:41.935Z"
+  },
+  {
+    "visitorId": "visitor-1779568533846-8nenv1a2",
+    "path": "/beats",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+    "email": "ellbopamusic@gmail.com",
+    "name": "Adonis Castillo",
+    "role": "ADMIN",
+    "firstSeen": "2026-05-23T20:35:33.906Z",
+    "lastSeen": "2026-05-23T21:09:51.276Z"
+  }
+]

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750">
+  <rect width="1200" height="750" fill="#050505"/>
+  <circle cx="590" cy="380" r="260" fill="#e50914" opacity=".18"/>
+  <rect x="310" y="160" width="580" height="410" rx="40" fill="#111114" stroke="#d9a441" stroke-width="5"/>
+  <circle cx="600" cy="365" r="110" fill="#e50914"/>
+  <rect x="560" y="240" width="80" height="210" rx="40" fill="#fff"/>
+  <rect x="520" y="470" width="160" height="22" rx="11" fill="#d9a441"/>
+  <text x="150" y="660" fill="#fff" font-size="58" font-family="Arial" font-weight="800">STUDIO SERVICE</text>
+</svg>

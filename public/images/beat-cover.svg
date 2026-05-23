@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop stop-color="#e50914"/>
+      <stop offset=".48" stop-color="#111114"/>
+      <stop offset="1" stop-color="#d9a441"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="750" fill="#050505"/>
+  <circle cx="870" cy="120" r="260" fill="#e50914" opacity=".28"/>
+  <circle cx="220" cy="620" r="280" fill="#d9a441" opacity=".2"/>
+  <rect x="130" y="110" width="940" height="530" rx="36" fill="url(#g)" opacity=".84"/>
+  <path d="M250 500 C420 230 570 590 740 300 S930 420 1010 220" fill="none" stroke="#fff" stroke-width="18" opacity=".72"/>
+  <text x="150" y="185" fill="#fff" font-size="58" font-family="Arial" font-weight="800">ELLBOPA BEAT</text>
+</svg>

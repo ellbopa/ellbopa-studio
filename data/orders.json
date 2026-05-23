@@ -1,0 +1,173 @@
+[
+  {
+    "id": "order-1779572766715-ftf7g5",
+    "createdAt": "2026-05-23T21:46:06.715Z",
+    "status": "PENDING",
+    "paidAmount": 0,
+    "userId": "dev-admin",
+    "productId": "rnb-noche-roja",
+    "product": {
+      "title": "R&B Noche Roja"
+    },
+    "serviceType": "BEAT / Basic License",
+    "totalAmount": 4200,
+    "depositAmount": 2100,
+    "notes": "Licencia: Basic License\nArchivos: MP3"
+  },
+  {
+    "id": "order-1779572762608-aetgrm",
+    "createdAt": "2026-05-23T21:46:02.608Z",
+    "status": "PENDING",
+    "paidAmount": 0,
+    "userId": "dev-admin",
+    "productId": "rnb-noche-roja",
+    "product": {
+      "title": "R&B Noche Roja"
+    },
+    "serviceType": "BEAT / Basic License",
+    "totalAmount": 4200,
+    "depositAmount": 2100,
+    "notes": "Licencia: Basic License\nArchivos: MP3"
+  },
+  {
+    "id": "order-1779569955110-acivoy",
+    "createdAt": "2026-05-23T20:59:15.110Z",
+    "status": "PAID",
+    "paidAmount": 2200,
+    "userId": "dev-admin",
+    "productId": "rnb-silk-chain",
+    "product": {
+      "title": "R&B Silk Chain"
+    },
+    "serviceType": "PRESET",
+    "totalAmount": 2200,
+    "depositAmount": 1100,
+    "finalFilesUrl": "R&B Silk Chain: /downloads/rnb-silk-chain.zip"
+  },
+  {
+    "id": "order-1779569622037-djywfn",
+    "createdAt": "2026-05-23T20:53:42.037Z",
+    "status": "PENDING",
+    "paidAmount": 0,
+    "userId": "dev-admin",
+    "productId": "rnb-silk-chain",
+    "product": {
+      "title": "R&B Silk Chain"
+    },
+    "serviceType": "PRESET",
+    "totalAmount": 2200,
+    "depositAmount": 1100
+  },
+  {
+    "id": "order-1779569613450-8lcp56",
+    "createdAt": "2026-05-23T20:53:33.450Z",
+    "status": "PENDING",
+    "paidAmount": 0,
+    "userId": "dev-admin",
+    "productId": "rnb-silk-chain",
+    "product": {
+      "title": "R&B Silk Chain"
+    },
+    "serviceType": "PRESET",
+    "totalAmount": 2200,
+    "depositAmount": 1100
+  },
+  {
+    "id": "order-1779569583936-mo2xhy",
+    "createdAt": "2026-05-23T20:53:03.936Z",
+    "status": "PENDING",
+    "paidAmount": 0,
+    "userId": "dev-admin",
+    "productId": "rnb-silk-chain",
+    "product": {
+      "title": "R&B Silk Chain"
+    },
+    "serviceType": "PRESET",
+    "totalAmount": 2200,
+    "depositAmount": 1100
+  },
+  {
+    "id": "order-1779569579757-bb1e7a",
+    "createdAt": "2026-05-23T20:52:59.757Z",
+    "status": "PENDING",
+    "paidAmount": 0,
+    "userId": "dev-admin",
+    "productId": "rnb-silk-chain",
+    "product": {
+      "title": "R&B Silk Chain"
+    },
+    "serviceType": "PRESET",
+    "totalAmount": 2200,
+    "depositAmount": 1100
+  },
+  {
+    "id": "order-1779568885569-zd3e0o",
+    "createdAt": "2026-05-23T20:41:25.569Z",
+    "status": "PENDING",
+    "paidAmount": 0,
+    "userId": "03414ebf-32a4-4673-8001-ab96f5cb7c71",
+    "productId": "detroit-dembow-bounce",
+    "product": {
+      "title": "Detroit Dembow Bounce"
+    },
+    "serviceType": "BEAT",
+    "totalAmount": 3500,
+    "depositAmount": 1750
+  },
+  {
+    "id": "order-1779568526838-lw9r2y",
+    "createdAt": "2026-05-23T20:35:26.838Z",
+    "status": "PENDING",
+    "paidAmount": 0,
+    "userId": "03414ebf-32a4-4673-8001-ab96f5cb7c71",
+    "productId": "trap-vocal-chain",
+    "product": {
+      "title": "Trap Vocal Chain"
+    },
+    "serviceType": "PRESET",
+    "totalAmount": 1800,
+    "depositAmount": 900
+  },
+  {
+    "id": "order-1779568015416-mya0d1",
+    "createdAt": "2026-05-23T20:26:55.416Z",
+    "status": "PENDING",
+    "paidAmount": 0,
+    "userId": "dev-admin",
+    "productId": "trap-vocal-chain",
+    "product": {
+      "title": "Trap Vocal Chain"
+    },
+    "serviceType": "PRESET",
+    "totalAmount": 1800,
+    "depositAmount": 900
+  },
+  {
+    "id": "order-1779566751608-86wjy6",
+    "createdAt": "2026-05-23T20:05:51.608Z",
+    "status": "PENDING",
+    "paidAmount": 0,
+    "userId": "dev-admin",
+    "productId": "trap-vocal-chain",
+    "product": {
+      "title": "Trap Vocal Chain"
+    },
+    "serviceType": "PRESET",
+    "totalAmount": 1800,
+    "depositAmount": 900
+  },
+  {
+    "id": "order-1779566747458-1v43rw",
+    "createdAt": "2026-05-23T20:05:47.458Z",
+    "status": "PENDING",
+    "paidAmount": 0,
+    "userId": "dev-admin",
+    "productId": "trap-vocal-chain",
+    "product": {
+      "title": "Trap Vocal Chain"
+    },
+    "serviceType": "PRESET",
+    "totalAmount": 1800,
+    "depositAmount": 900
+  }
+]

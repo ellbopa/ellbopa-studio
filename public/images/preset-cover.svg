@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750">
+  <rect width="1200" height="750" fill="#050505"/>
+  <rect x="130" y="110" width="940" height="530" rx="28" fill="#151515" stroke="#d9a441" stroke-width="4"/>
+  <g fill="#e50914">
+    <rect x="240" y="250" width="90" height="260" rx="12"/>
+    <rect x="390" y="190" width="90" height="320" rx="12"/>
+    <rect x="540" y="310" width="90" height="200" rx="12"/>
+    <rect x="690" y="230" width="90" height="280" rx="12"/>
+    <rect x="840" y="160" width="90" height="350" rx="12"/>
+  </g>
+  <text x="150" y="185" fill="#fff" font-size="58" font-family="Arial" font-weight="800">VOCAL PRESET</text>
+</svg>
