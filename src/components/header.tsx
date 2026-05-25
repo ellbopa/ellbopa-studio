@@ -1,10 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Bell, ChevronDown, Grid3X3, Heart, LogOut, Music2, Search, Settings, Upload, UserRound, WandSparkles } from "lucide-react";
-import { getSiteConfig } from "@/lib/site-config";
 import { auth } from "@/lib/auth";
 import { isConfiguredAdminEmail } from "@/lib/config";
 import { CartLink } from "@/components/cart-link";
+import { getActiveNotifications } from "@/lib/notifications";
 
 const nav = [
   ["Inicio", "/"],
@@ -25,9 +25,10 @@ const nav = [
 ];
 
 export async function Header() {
-  const [config, session] = await Promise.all([getSiteConfig(), auth()]);
+  const session = await auth();
   const isAdmin = session?.user?.role === "ADMIN" || isConfiguredAdminEmail(session?.user?.email);
   const visibleNav = isAdmin ? nav : nav.filter(([, href]) => href !== "/admin");
+  const notifications = await getActiveNotifications(session?.user?.role);
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#080808]/86 shadow-[0_20px_70px_rgba(0,0,0,.5)] backdrop-blur-2xl">
@@ -83,10 +84,29 @@ export async function Header() {
           <Link href="/compras" className="grid h-11 w-11 place-items-center rounded-md border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-studio-red/40 hover:text-white" aria-label="Favoritos">
             <Heart size={19} />
           </Link>
-          <button className="relative grid h-11 w-11 place-items-center rounded-md border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-studio-red/40 hover:text-white" aria-label="Notificaciones">
-            <Bell size={19} />
-            <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-studio-gold shadow-[0_0_12px_rgba(217,164,65,.8)]" />
-          </button>
+          <div className="group/notify relative">
+            <button className="relative grid h-11 w-11 place-items-center rounded-md border border-white/10 bg-white/[0.04] text-white/70 transition hover:border-studio-red/40 hover:text-white" aria-label="Notificaciones">
+              <Bell size={19} />
+              {notifications.length > 0 ? (
+                <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-studio-gold px-1 text-[10px] font-black text-black shadow-[0_0_14px_rgba(217,164,65,.85)]">
+                  {notifications.length}
+                </span>
+              ) : null}
+            </button>
+            {notifications.length > 0 ? (
+              <div className="pointer-events-none absolute right-0 top-12 w-80 rounded-lg border border-white/10 bg-[#121212] p-3 opacity-0 shadow-[0_28px_80px_rgba(0,0,0,.65)] transition group-hover/notify:pointer-events-auto group-hover/notify:opacity-100">
+                <p className="px-2 pb-2 text-xs font-black uppercase tracking-[0.18em] text-studio-gold">Notificaciones</p>
+                <div className="grid gap-2">
+                  {notifications.map((notification) => (
+                    <div key={notification.id} className="rounded-md border border-white/10 bg-white/[0.04] p-3">
+                      <p className="text-sm font-black text-white">{notification.title}</p>
+                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-white/52">{notification.message}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <CartLink />

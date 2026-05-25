@@ -1,5 +1,75 @@
 [
   {
+    "id": "order-1779735303665-1u7hka",
+    "createdAt": "2026-05-25T18:55:03.665Z",
+    "status": "PENDING",
+    "paidAmount": 0,
+    "userId": "cmpkpi6ft0000rho55p7066oo",
+    "productId": "meek-mill-type-beat-1779684786107",
+    "product": {
+      "title": "Meek Mill type beat"
+    },
+    "serviceType": "BEAT / Basic License",
+    "totalAmount": 2000,
+    "depositAmount": 1000,
+    "notes": "Licencia: Basic License\nArchivos: MP3"
+  },
+  {
+    "id": "order-1779684923518-iajkac",
+    "createdAt": "2026-05-25T04:55:23.518Z",
+    "status": "PENDING",
+    "paidAmount": 0,
+    "userId": "defb7902-a1d0-473d-bf25-a3541904c136",
+    "productId": "meek-mill-type-beat-1779684786107",
+    "product": {
+      "title": "Meek Mill type beat"
+    },
+    "serviceType": "BEAT / Premium License",
+    "totalAmount": 5000,
+    "depositAmount": 2500,
+    "notes": "Licencia: Premium License\nArchivos: WAV, MP3"
+  },
+  {
+    "id": "order-1779679017405-i3xvnm",
+    "createdAt": "2026-05-25T03:16:57.405Z",
+    "status": "PENDING",
+    "paidAmount": 0,
+    "userId": "03414ebf-32a4-4673-8001-ab96f5cb7c71",
+    "productId": "trap-vocal-chain",
+    "product": {
+      "title": "Trap Vocal Chain"
+    },
+    "serviceType": "PRESET",
+    "totalAmount": 1800,
+    "depositAmount": 900
+  },
+  {
+    "id": "order-1779678938706-ga6e23",
+    "createdAt": "2026-05-25T03:15:38.706Z",
+    "status": "PENDING",
+    "paidAmount": 0,
+    "userId": "03414ebf-32a4-4673-8001-ab96f5cb7c71",
+    "productId": "r&b-noche-roja",
+    "product": {
+      "title": "R&B Noche Roja"
+    },
+    "serviceType": "BEAT / Unlimited License",
+    "totalAmount": 12600,
+    "depositAmount": 6300,
+    "notes": "Licencia: Unlimited License\nArchivos: WAV, STEMS, MP3"
+  },
+  {
+    "id": "order-1779669993909-ptm4xj",
+    "createdAt": "2026-05-25T00:46:33.909Z",
+    "status": "PENDING",
+    "paidAmount": 0,
+    "userId": "local-user-1779659462864-qmrpoq",
+    "serviceType": "Compra Ellbopa (2 productos)",
+    "totalAmount": 16800,
+    "depositAmount": 16800,
+    "notes": "R&B Noche Roja / BEAT / Basic License / R&B\nR&B Noche Roja / BEAT / Unlimited License / R&B"
+  },
+  {
     "id": "order-1779572766715-ftf7g5",
     "createdAt": "2026-05-23T21:46:06.715Z",
     "status": "PENDING",

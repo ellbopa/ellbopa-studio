@@ -174,7 +174,7 @@ export default async function HomePage() {
             <Link href="/beats" className="text-sm font-bold text-white/72 transition hover:text-studio-gold">See more</Link>
           </div>
           <div className="no-scrollbar flex gap-7 overflow-x-auto pb-3">
-            {beats.slice(0, 6).map((beat, index) => (
+            {beats.slice(0, 6).map((beat) => (
               <article key={beat.id} className="group w-[220px] shrink-0">
                 <Link href={`/checkout?productId=${encodeURIComponent(beat.id)}`} className="relative block aspect-square overflow-hidden rounded-lg border border-white/10 bg-black">
                   <Image src={beat.imageUrl || "/images/beat-cover.svg"} alt={beat.title} fill sizes="220px" className="object-cover transition duration-500 group-hover:scale-105" />

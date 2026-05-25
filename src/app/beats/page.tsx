@@ -5,6 +5,8 @@ import { Grid3X3, Heart, List, Music2, Search, SlidersHorizontal } from "lucide-
 import { BeatCard } from "@/components/beat-card";
 import { getProducts } from "@/lib/products";
 import { formatDop } from "@/lib/format";
+import { auth } from "@/lib/auth";
+import { getFavoriteIds } from "@/lib/favorites";
 
 export const metadata = { title: "Instrumentales Store" };
 
@@ -12,7 +14,8 @@ type BeatsSearchParams = { q?: string; genre?: string; mood?: string; key?: stri
 
 export default async function BeatsPage({ searchParams }: { searchParams?: Promise<BeatsSearchParams> }) {
   const params = (await searchParams) ?? {};
-  const allBeats = await getProducts(ProductType.BEAT);
+  const [allBeats, session] = await Promise.all([getProducts(ProductType.BEAT), auth()]);
+  const favoriteIds = await getFavoriteIds(session?.user?.id);
   const query = (params.q || "").trim().toLowerCase();
   const beats = allBeats
     .filter((beat) => {
@@ -91,7 +94,7 @@ export default async function BeatsPage({ searchParams }: { searchParams?: Promi
               No encontre instrumentales con esa busqueda. Prueba con Trap, Dembow, R&B, Detroit, BPM o mood.
             </div>
           ) : null}
-          {beats.map((product, index) => <BeatCard key={`${product.id}-${index}`} product={product} index={index} />)}
+          {beats.map((product, index) => <BeatCard key={`${product.id}-${index}`} product={product} index={index} isFavorite={favoriteIds.has(product.id)} />)}
         </div>
       </section>
 

@@ -1,4 +1,4 @@
-export type LicenseKey = "basic" | "premium" | "exclusive";
+export type LicenseKey = "basic" | "premium" | "unlimited";
 
 export type LicenseOption = {
   key: LicenseKey;
@@ -36,8 +36,8 @@ export function getLicenseOptions(product: LicensableProduct): LicenseOption[] {
       terms: ["Usar para grabacion musical", "Distribuir hasta 100,000 copias", "Streaming online hasta 500,000 reproducciones", "Presentaciones en vivo con fines de lucro"]
     },
     {
-      key: "exclusive",
-      title: "Exclusiva / Unlimited",
+      key: "unlimited",
+      title: "Unlimited License",
       price: exclusive,
       files: "WAV, STEMS, MP3",
       featured: true,
@@ -48,5 +48,6 @@ export function getLicenseOptions(product: LicensableProduct): LicenseOption[] {
 
 export function findLicenseOption(product: LicensableProduct, key?: string | null) {
   const options = getLicenseOptions(product);
-  return options.find((option) => option.key === key) ?? options[0];
+  const normalizedKey = key === "exclusive" ? "unlimited" : key;
+  return options.find((option) => option.key === normalizedKey) ?? options[0];
 }

@@ -1,8 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, Play, ShoppingBag, Sparkles, Verified } from "lucide-react";
+import { ShoppingBag, Sparkles, Verified } from "lucide-react";
 import { formatDop } from "@/lib/format";
 import { AddToCartButton } from "@/components/add-to-cart-button";
+import { FavoriteButton } from "@/components/favorite-button";
+import { AudioPreviewPlayer } from "@/components/audio-preview-player";
 
 type BeatCardProps = {
   product: {
@@ -17,9 +19,10 @@ type BeatCardProps = {
     audioUrl?: string | null;
   };
   index?: number;
+  isFavorite?: boolean;
 };
 
-export function BeatCard({ product, index = 0 }: BeatCardProps) {
+export function BeatCard({ product, index = 0, isFavorite = false }: BeatCardProps) {
   const producers = ["Ellbopa", "Adonis", "Studio Plug", "Invivienda Sound", "Los Mina Lab"];
   const producer = producers[index % producers.length];
 
@@ -34,19 +37,14 @@ export function BeatCard({ product, index = 0 }: BeatCardProps) {
           className="object-contain p-3 transition duration-500 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,transparent,rgba(0,0,0,.62)_78%)] opacity-0 transition group-hover:opacity-100" />
-        <button className="absolute bottom-3 right-3 grid h-11 w-11 place-items-center rounded-full bg-black/70 text-white shadow-glow backdrop-blur transition group-hover:scale-105 group-hover:bg-studio-red" aria-label={`Play ${product.title}`}>
-          <Play size={18} className="ml-0.5 fill-white" />
-        </button>
-        <button className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-black/60 text-white/72 backdrop-blur transition hover:text-studio-gold" aria-label="Favorito">
-          <Heart size={16} />
-        </button>
+        <div className="absolute right-3 top-3"><FavoriteButton productId={product.id} active={isFavorite} next="/beats" /></div>
       </div>
 
       <div className="mt-4">
-        <h3 className="line-clamp-1 text-lg font-black text-white">
+        <Link href={`/producto/${encodeURIComponent(product.id)}`} className="line-clamp-1 text-lg font-black text-white transition hover:text-studio-gold">
           <Sparkles className="mr-1 inline h-4 w-4 text-studio-red" />
           {product.title}
-        </h3>
+        </Link>
         <p className="mt-1 flex items-center gap-1 text-sm text-white/52">
           {producer}
           {index % 3 === 0 ? <Verified size={14} className="fill-blue-500 text-blue-500" /> : null}
@@ -57,6 +55,13 @@ export function BeatCard({ product, index = 0 }: BeatCardProps) {
           {product.musicalKey ? <span>{product.musicalKey}</span> : null}
           {product.mood ? <span>{product.mood}</span> : null}
         </div>
+        {product.audioUrl ? (
+          <div className="mt-3">
+            <AudioPreviewPlayer audioUrl={product.audioUrl} title={product.title} compact />
+          </div>
+        ) : (
+          <p className="mt-3 rounded-md border border-white/10 bg-black/45 px-3 py-2 text-xs font-bold text-white/40">Preview pendiente</p>
+        )}
 
         <div className="mt-4 grid gap-2">
         <AddToCartButton

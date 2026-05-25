@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Crown, MessageCircle, ShoppingCart } from "lucide-react";
 import { formatDop, whatsappUrl } from "@/lib/format";
 import { getSiteConfig } from "@/lib/site-config";
+import { AudioPreviewPlayer } from "@/components/audio-preview-player";
 
 type ProductCardProps = {
   product: {
@@ -25,7 +26,7 @@ export async function ProductCard({ product }: ProductCardProps) {
   const licenses = [
     { name: "Basica", price: product.price, mode: "basic" },
     { name: "Premium", price: product.premiumPrice || Math.round(product.price * 1.8), mode: "premium" },
-    { name: "Exclusiva", price: product.exclusivePrice || Math.round(product.price * 4), mode: "exclusive" }
+    { name: "Unlimited", price: product.exclusivePrice || Math.round(product.price * 4), mode: "unlimited" }
   ];
 
   return (
@@ -49,7 +50,7 @@ export async function ProductCard({ product }: ProductCardProps) {
           {product.musicalKey ? <span className="rounded bg-white/8 px-2 py-1">{product.musicalKey}</span> : null}
           {product.mood ? <span className="rounded bg-white/8 px-2 py-1">{product.mood}</span> : null}
         </div>
-        {product.audioUrl ? <audio controls src={product.audioUrl} className="w-full" /> : null}
+        {product.audioUrl ? <AudioPreviewPlayer audioUrl={product.audioUrl} title={product.title} /> : null}
         <div className="grid gap-2">
           {licenses.map((license) => (
             <form key={license.mode} action="/api/checkout" method="POST" className="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-black/35 p-3">
@@ -57,7 +58,7 @@ export async function ProductCard({ product }: ProductCardProps) {
               <input type="hidden" name="mode" value="full" />
               <div>
                 <p className="flex items-center gap-2 text-sm font-bold">
-                  {license.mode === "exclusive" ? <Crown size={14} className="text-studio-gold" /> : null}
+                  {license.mode === "unlimited" ? <Crown size={14} className="text-studio-gold" /> : null}
                   Licencia {license.name}
                 </p>
                 <strong className="font-display text-lg text-studio-gold">{formatDop(license.price)}</strong>

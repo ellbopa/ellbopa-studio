@@ -1,0 +1,35 @@
+[
+  {
+    "id": "local-user-1779659462864-qmrpoq",
+    "name": "adonis castillo ",
+    "email": "ellbopamusic@gmail.com",
+    "phone": "8498815720",
+    "passwordHash": "$2a$10$vdJWsKVJ18aamSd1TLLmB.G.GHNu/MaRcH2gb/ZmLowvDsTeZCdmq",
+    "role": "ARTIST",
+    "verified": true,
+    "onboardingCompleted": false,
+    "createdAt": "2026-05-24T21:51:02.934Z"
+  },
+  {
+    "id": "local-user-1779658135856-q4epnt",
+    "name": "Usuario Test",
+    "email": "testuser172851@example.com",
+    "phone": "8090000000",
+    "passwordHash": "$2a$10$yEDOXCwJPDJYKGpWvHtJleoAStb1vZFKaEUOtLoH.G2XUJXDtHVPG",
+    "role": "ARTIST",
+    "verified": true,
+    "onboardingCompleted": false,
+    "createdAt": "2026-05-24T21:28:55.942Z"
+  },
+  {
+    "id": "local-user-1779658095918-um951p",
+    "name": "Usuario Test",
+    "email": "testuser172810@example.com",
+    "phone": "8090000000",
+    "passwordHash": "$2a$10$clDBYqCPvZlUfNCukiCQN.nikJupqHVVLvO.tRrQRXXmMJeKJAabW",
+    "role": "ARTIST",
+    "verified": true,
+    "onboardingCompleted": false,
+    "createdAt": "2026-05-24T21:28:15.990Z"
+  }
+]

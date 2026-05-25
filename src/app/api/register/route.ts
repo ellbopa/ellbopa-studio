@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { createAndSendOtp } from "@/lib/otp";
 import { getClientIp, isRateLimited } from "@/lib/rate-limit";
+import { saveLocalUser } from "@/lib/local-users";
 
 const registerSchema = z.object({
   name: z.string().min(2),
@@ -44,8 +45,20 @@ export async function POST(request: Request) {
       }
     });
     await createAndSendOtp(user.id, user.email);
-  } catch {
-    return NextResponse.redirect(new URL("/registro?error=unavailable", request.url));
+  } catch (error) {
+    console.error("[register][db fallback]", error);
+    try {
+      await saveLocalUser({
+        name: parsed.data.name,
+        email: parsed.data.email,
+        phone: parsed.data.phone,
+        password: parsed.data.password,
+        role: "ARTIST"
+      });
+      return NextResponse.redirect(new URL(`/login?registered=local&email=${encodeURIComponent(parsed.data.email)}`, request.url));
+    } catch {
+      return NextResponse.redirect(new URL("/registro?error=unavailable", request.url));
+    }
   }
 
   return NextResponse.redirect(new URL(`/verify?email=${encodeURIComponent(parsed.data.email)}`, request.url));

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CalendarDays, Headphones, Instagram, MapPin, Mic2, Music2, ShieldCheck, Sparkles, Star } from "lucide-react";
+import { CalendarDays, Headphones, Instagram, MapPin, Mic2, Music2, ShieldCheck } from "lucide-react";
 import { CtaButton } from "@/components/cta-button";
 import { Section } from "@/components/section";
 import { services } from "@/lib/demo-data";

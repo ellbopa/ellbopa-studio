@@ -74,6 +74,15 @@ async function main() {
       description: "Chain vocal lista para grabar con brillo, presencia y tuning controlado."
     },
     {
+      title: "Dembow RGB Drum Kit",
+      type: ProductType.SOUND_KIT,
+      genre: "Dembow",
+      price: 2500,
+      imageUrl: "/images/preset-cover.svg",
+      fileUrl: "/downloads/dembow-rgb-drum-kit.zip",
+      description: "Pack de drums, one shots y loops para producir dembow moderno."
+    },
+    {
       title: "Mezcla y Master Online",
       type: ProductType.SERVICE,
       genre: "Trap, R&B, Detroit, Dembow",
@@ -92,14 +101,30 @@ async function main() {
   ];
 
   for (const product of products) {
-    await prisma.product.upsert({
+    const saved = await prisma.product.upsert({
       where: { id: product.title.toLowerCase().replaceAll(" ", "-") },
-      update: product,
+      update: { ...product, slug: product.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") },
       create: {
         id: product.title.toLowerCase().replaceAll(" ", "-"),
+        slug: product.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
         ...product
       }
     });
+
+    if (product.type === ProductType.BEAT) {
+      const licenseSeed = [
+        { key: "basic", title: "Basic License", price: product.price, files: "MP3", terms: "Distribucion hasta 10,000 copias; Streaming hasta 50,000 reproducciones" },
+        { key: "premium", title: "Premium License", price: Math.round(product.price * 1.6), files: "WAV, MP3", terms: "Distribucion hasta 100,000 copias; Streaming hasta 500,000 reproducciones" },
+        { key: "unlimited", title: "Unlimited License", price: Math.round(product.price * 3), files: "WAV, STEMS, MP3", terms: "Streams ilimitados; trackouts incluidos; uso comercial amplio" }
+      ];
+      for (const license of licenseSeed) {
+        await prisma.license.upsert({
+          where: { productId_key: { productId: saved.id, key: license.key } },
+          update: license,
+          create: { ...license, productId: saved.id }
+        });
+      }
+    }
   }
 }
 

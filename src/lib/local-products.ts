@@ -5,6 +5,8 @@ import path from "node:path";
 
 export type LocalProduct = {
   id: string;
+  slug?: string | null;
+  ownerId?: string | null;
   title: string;
   type: ProductType;
   genre?: string | null;
@@ -15,6 +17,7 @@ export type LocalProduct = {
   price: number;
   premiumPrice?: number | null;
   exclusivePrice?: number | null;
+  popularity?: number | null;
   audioUrl?: string | null;
   imageUrl?: string | null;
   fileUrl?: string | null;

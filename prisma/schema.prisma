@@ -18,6 +18,7 @@ enum Role {
 enum ProductType {
   BEAT
   PRESET
+  SOUND_KIT
   SERVICE
 }
 
@@ -35,8 +36,23 @@ enum SenderRole {
   ADMIN
 }
 
+enum WalletTransactionType {
+  SALE_EARNING
+  PAYOUT_REQUEST
+  PAYOUT_PAID
+  ADJUSTMENT
+}
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
 model User {
   id           String    @id @default(cuid())
+  username     String?   @unique
   name         String?
   email        String    @unique
   emailVerified DateTime?
@@ -58,12 +74,23 @@ model User {
   bookings     Booking[]
   payments     Payment[]
   messages     Message[]
+  products     Product[]
+  favorites    Favorite[]
+  posts        CommunityPost[]
+  comments     CommunityComment[]
+  followers    Follow[] @relation("FollowTarget")
+  following    Follow[] @relation("FollowSource")
+  reviewsGiven Review[] @relation("ReviewAuthor")
+  reviewsReceived Review[] @relation("ReviewTarget")
   verificationCodes VerificationCode[]
   passwordResetTokens PasswordResetToken[]
   artistProfile ArtistProfile?
   producerProfile ProducerProfile?
   engineerProfile EngineerProfile?
   studioProfile StudioProfile?
+  wallet       Wallet?
+  walletTransactions WalletTransaction[]
+  payoutRequests PayoutRequest[]
 }
 
 model ArtistProfile {
@@ -179,6 +206,8 @@ model VerificationToken {
 
 model Product {
   id          String      @id @default(cuid())
+  ownerId     String?
+  slug        String?     @unique
   title       String
   type        ProductType
   genre       String?
@@ -187,12 +216,105 @@ model Product {
   mood        String?
   description String
   price       Int
+  premiumPrice Int?
+  exclusivePrice Int?
+  popularity  Int         @default(0)
   audioUrl    String?
   imageUrl    String?
   fileUrl     String?
   active      Boolean     @default(true)
   createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  owner       User?       @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  licenses    License[]
   orders      Order[]
+  favorites   Favorite[]
+  views       ProductView[]
+
+  @@index([type, active])
+  @@index([genre])
+  @@index([ownerId])
+}
+
+model License {
+  id          String   @id @default(cuid())
+  productId   String
+  key         String
+  title       String
+  price       Int
+  files       String
+  terms       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, key])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  follower    User     @relation("FollowSource", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("FollowTarget", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+}
+
+model CommunityPost {
+  id        String   @id @default(cuid())
+  userId    String
+  text      String
+  imageUrl  String?
+  likes     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments  CommunityComment[]
+}
+
+model CommunityComment {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  text      String
+  createdAt DateTime @default(now())
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  authorId  String
+  targetId  String
+  rating    Int
+  text      String
+  createdAt DateTime @default(now())
+  author    User     @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  target    User     @relation("ReviewTarget", fields: [targetId], references: [id], onDelete: Cascade)
+}
+
+model ProductView {
+  id        String   @id @default(cuid())
+  productId String
+  userId    String?
+  path      String?
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, createdAt])
 }
 
 model Order {
@@ -204,6 +326,11 @@ model Order {
   totalAmount     Int
   depositAmount   Int
   paidAmount      Int        @default(0)
+  platformFeePercent Int     @default(20)
+  platformFeeAmount  Int     @default(0)
+  creatorEarnings    Int     @default(0)
+  commissionProcessedAt DateTime?
+  creatorId       String?
   notes           String?
   referenceArtist String?
   bpm             Int?
@@ -216,6 +343,7 @@ model Order {
   product         Product?   @relation(fields: [productId], references: [id], onDelete: SetNull)
   payments        Payment[]
   messages        Message[]
+  walletTransaction WalletTransaction?
 }
 
 model Booking {
@@ -239,6 +367,7 @@ model Payment {
   orderId         String?
   bookingId       String?
   stripeSessionId String     @unique
+  paymentIntentId String?
   amount          Int
   status          WorkStatus @default(PENDING)
   receiptUrl      String?
@@ -246,6 +375,60 @@ model Payment {
   user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   order           Order?     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   booking         Booking?   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Wallet {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  availableBalance Int    @default(0)
+  pendingBalance   Int    @default(0)
+  totalEarned      Int    @default(0)
+  totalPaidOut     Int    @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions     WalletTransaction[]
+  payoutRequests   PayoutRequest[]
+}
+
+model WalletTransaction {
+  id          String                @id @default(cuid())
+  walletId    String
+  userId      String
+  orderId     String?               @unique
+  payoutId    String?
+  type        WalletTransactionType
+  amount      Int
+  platformFeeAmount Int             @default(0)
+  grossAmount Int                   @default(0)
+  description String?
+  createdAt   DateTime              @default(now())
+  wallet      Wallet                @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order       Order?                @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  payout      PayoutRequest?        @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([walletId, createdAt])
+}
+
+model PayoutRequest {
+  id        String       @id @default(cuid())
+  walletId  String
+  userId    String
+  amount    Int
+  method    String
+  note      String?
+  status    PayoutStatus @default(PENDING)
+  adminNote String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  wallet    Wallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
 }
 
 model VerificationCode {

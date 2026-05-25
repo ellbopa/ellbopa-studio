@@ -33,5 +33,5 @@ export function canAccessRoleDashboard(userRole: string | null | undefined, dash
 
 export function canUploadProducts(userRole?: string | null) {
   const normalized = normalizeRole(userRole);
-  return normalized === "ADMIN" || normalized === "PRODUCER";
+  return normalized === "ADMIN" || normalized === "PRODUCER" || normalized === "ENGINEER";
 }

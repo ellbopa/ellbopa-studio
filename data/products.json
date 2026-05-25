@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "id": "meek-mill-type-beat-1779684786107",
+    "title": "Meek Mill type beat",
+    "type": "BEAT",
+    "genre": "trap",
+    "bpm": null,
+    "musicalKey": "g menor",
+    "mood": "",
+    "description": "type beats",
+    "price": 2000,
+    "premiumPrice": 5000,
+    "exclusivePrice": 10000,
+    "imageUrl": "https://38lek8tym6.ufs.sh/f/zhuFVjZ7QTNyWqgCyrlZMfv4sdR5uLQ207HqgSBGApC9Xolx",
+    "audioUrl": "https://38lek8tym6.ufs.sh/f/zhuFVjZ7QTNyaJBRDbFCyOAQYljtg4cKMXrWxdPUqiuJah0G",
+    "fileUrl": "https://38lek8tym6.ufs.sh/f/zhuFVjZ7QTNyN18cZ6fwcBXvi24gpW0HPCLI7YVdwK5z9EtQ",
+    "active": true,
+    "createdAt": "2026-05-25T04:53:06.107Z"
+  }
+]

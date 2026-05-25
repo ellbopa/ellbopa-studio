@@ -70,6 +70,13 @@ export default async function OnboardingPage() {
               <div className="mt-5 space-y-2">
                 {benefits.map((benefit) => <p key={benefit} className="rounded-md border border-white/10 bg-white/[0.035] px-3 py-2 text-xs font-bold text-white/58">{benefit}</p>)}
               </div>
+              <div className="mt-5 grid gap-2">
+                <input name="displayName" placeholder={role === "PRODUCER" ? "Nombre artistico/productor" : role === "ENGINEER" ? "Nombre profesional" : "Nombre artistico"} className="rounded-md border border-white/10 bg-black/35 px-3 py-2 text-sm outline-none focus:border-studio-red/60" />
+                <input name="genres" placeholder={role === "ENGINEER" ? "Servicios: mezcla, mastering..." : "Generos: Trap, R&B, Dembow"} className="rounded-md border border-white/10 bg-black/35 px-3 py-2 text-sm outline-none focus:border-studio-red/60" />
+                <input name="location" placeholder="Ubicacion" className="rounded-md border border-white/10 bg-black/35 px-3 py-2 text-sm outline-none focus:border-studio-red/60" />
+                <input name="instagram" placeholder="Instagram" className="rounded-md border border-white/10 bg-black/35 px-3 py-2 text-sm outline-none focus:border-studio-red/60" />
+                {role !== "ARTIST" ? <input name="startingPrice" type="number" placeholder="Precio desde RD$" className="rounded-md border border-white/10 bg-black/35 px-3 py-2 text-sm outline-none focus:border-studio-red/60" /> : null}
+              </div>
               <button className="mt-auto rounded-md bg-studio-red px-4 py-3 text-sm font-black text-white glow-button">Continuar</button>
             </div>
           </form>

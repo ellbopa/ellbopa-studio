@@ -12,6 +12,7 @@ export const metadata = { title: "Descarga Privada" };
 type DownloadOrder = {
   id: string;
   userId: string;
+  productId?: string | null;
   product?: { title: string; fileUrl?: string | null } | null;
   serviceType?: string | null;
   status: string;
@@ -28,7 +29,8 @@ export default async function DownloadPage({ params }: { params: Promise<{ order
   if (!order || order.userId !== session.user.id) redirect("/cliente");
   if (!isOrderPaid(order)) redirect("/cliente?download=pending");
 
-  const links = parseDownloadLinks(order.finalFilesUrl || order.product?.fileUrl);
+  const downloadSource = order.finalFilesUrl || (order.product?.fileUrl ? `${order.product.title}: ${order.product.fileUrl}` : "");
+  const links = parseDownloadLinks(downloadSource);
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-14 sm:px-6">
@@ -38,7 +40,7 @@ export default async function DownloadPage({ params }: { params: Promise<{ order
             <p className="text-sm uppercase tracking-[0.22em] text-studio-gold">Descarga privada</p>
             <h1 className="mt-3 font-display text-4xl font-black">{order.product?.title ?? order.serviceType ?? "Compra Ellbopa Music"}</h1>
             <p className="mt-3 max-w-2xl text-white/58">
-              Esta pagina solo abre con la cuenta que hizo la compra. Tu pago esta confirmado y tus archivos estan listos.
+              Esta pagina solo abre con la cuenta que hizo la compra. Tu pago esta confirmado y tu paquete ZIP incluye el archivo comprado y la licencia.
             </p>
           </div>
           <div className="rounded-md border border-studio-gold/25 bg-studio-gold/10 p-4 text-right">
@@ -63,7 +65,7 @@ export default async function DownloadPage({ params }: { params: Promise<{ order
               >
                 <span>
                   <span className="block font-display text-2xl font-black">{link.title}</span>
-                  <span className="mt-1 flex items-center gap-2 text-sm text-white/50"><ShieldCheck size={15} /> Descarga protegida por cuenta</span>
+                  <span className="mt-1 flex items-center gap-2 text-sm text-white/50"><ShieldCheck size={15} /> ZIP protegido con licencia incluida</span>
                 </span>
                 <span className="inline-flex items-center justify-center gap-2 rounded-md bg-studio-red px-5 py-3 font-bold glow-button">
                   <Download size={18} /> Descargar

@@ -12,8 +12,8 @@ import { findLicenseOption, getLicenseOptions } from "@/lib/licensing";
 
 export const metadata = { title: "Checkout" };
 
-export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ productId?: string; license?: string }> }) {
-  const [{ productId, license }, session, config] = await Promise.all([searchParams, auth(), getSiteConfig()]);
+export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ productId?: string; license?: string; error?: string }> }) {
+  const [{ productId, license, error }, session, config] = await Promise.all([searchParams, auth(), getSiteConfig()]);
   if (!productId) redirect("/beats");
 
   const product = (await getProducts()).find((item) => item.id === productId);
@@ -153,6 +153,11 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
             ? "Compra tu preset por tarjeta o deja la orden pendiente por transferencia. Los archivos se liberan cuando el pago este confirmado."
             : "Selecciona la licencia del instrumental, revisa los terminos y completa tu compra como en una tienda profesional."}
         </p>
+        {error === "missing-file" ? (
+          <div className="mt-5 rounded-lg border border-studio-gold/25 bg-studio-gold/10 p-4 text-sm font-bold text-studio-gold">
+            Este producto todavia no tiene archivo final configurado. El admin debe subir el ZIP/WAV/MP3 antes de venderlo.
+          </div>
+        ) : null}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">

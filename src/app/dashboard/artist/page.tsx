@@ -1,4 +1,4 @@
-import { CalendarDays, Download, Heart, MessageSquare, Settings, ShoppingBag } from "lucide-react";
+import { CalendarDays, Download, Heart, ShoppingBag } from "lucide-react";
 import { RoleDashboard } from "@/components/role-dashboard";
 import { requireDashboardRole } from "@/app/dashboard/_lib";
 

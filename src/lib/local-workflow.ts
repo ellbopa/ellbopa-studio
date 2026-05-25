@@ -42,6 +42,7 @@ export type LocalPayment = {
   orderId?: string | null;
   bookingId?: string | null;
   stripeSessionId: string;
+  paymentIntentId?: string | null;
   amount: number;
   status: WorkStatus;
   receiptUrl?: string | null;

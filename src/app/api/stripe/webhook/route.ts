@@ -6,6 +6,8 @@ import { stripe } from "@/lib/stripe";
 import { formatDop } from "@/lib/format";
 import { sendPaymentEmail } from "@/lib/email";
 import { getLocalBookings, getLocalOrders, updateLocalBooking, updateLocalOrder, updateLocalPayment } from "@/lib/local-workflow";
+import { ensureStripeOrder, resolveStripeDigitalDownloads } from "@/lib/stripe-purchase-sync";
+import { processOrderCommission } from "@/lib/wallet";
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -27,41 +29,71 @@ export async function POST(request: Request) {
   if (event.type === "checkout.session.completed") {
     const checkout = event.data.object;
     const amount = Number(checkout.metadata?.amount ?? 0);
-    const orderId = checkout.metadata?.orderId || undefined;
+    let orderId = checkout.metadata?.orderId || undefined;
     const bookingId = checkout.metadata?.bookingId || undefined;
-    const digitalDownloads = checkout.metadata?.digitalDownloads || undefined;
     const userEmail = checkout.metadata?.userEmail || checkout.customer_details?.email || undefined;
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+    const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+    const paymentIntentId = typeof checkout.payment_intent === "string" ? checkout.payment_intent : checkout.payment_intent?.id;
+
+    if (process.env.NODE_ENV === "development") {
+      console.error("[stripe-webhook][checkout-session-completed]", {
+        sessionId: checkout.id,
+        orderId,
+        bookingId,
+        userId: checkout.metadata?.userId,
+        paymentStatus: checkout.payment_status
+      });
+    }
 
     try {
       await prisma.payment.updateMany({
         where: { stripeSessionId: checkout.id },
-        data: { status: "PAID", receiptUrl: checkout.url ?? undefined }
+        data: { status: "PAID", receiptUrl: checkout.url ?? undefined, paymentIntentId }
       });
     } catch (error) {
       console.error("[stripe-webhook][payment local]", error);
-      await updateLocalPayment(checkout.id, { status: "PAID", receiptUrl: checkout.url ?? undefined });
+      await updateLocalPayment(checkout.id, { status: "PAID", receiptUrl: checkout.url ?? undefined, paymentIntentId });
+    }
+
+    if ((!orderId || orderId.startsWith("order-")) && checkout.metadata?.userId && (checkout.metadata?.productId || checkout.metadata?.productIds)) {
+      try {
+        const order = await ensureStripeOrder(checkout, checkout.metadata.userId, amount);
+        orderId = order?.id ?? orderId;
+        if (order?.id) await prisma.payment.updateMany({ where: { stripeSessionId: checkout.id }, data: { orderId: order.id } });
+      } catch (error) {
+        console.error("[stripe-webhook][create-order]", error);
+      }
     }
 
     if (orderId) {
       try {
-        const order = await prisma.order.findUnique({ where: { id: orderId }, include: { user: true, product: true } });
+        let order = await prisma.order.findUnique({ where: { id: orderId }, include: { user: true, product: true } });
+        if (!order && checkout.metadata?.userId && (checkout.metadata?.productId || checkout.metadata?.productIds)) {
+          const ensuredOrder = await ensureStripeOrder(checkout, checkout.metadata.userId, amount);
+          orderId = ensuredOrder?.id ?? orderId;
+          if (ensuredOrder) {
+            await prisma.payment.updateMany({ where: { stripeSessionId: checkout.id }, data: { orderId: ensuredOrder.id } });
+            order = await prisma.order.findUnique({ where: { id: ensuredOrder.id }, include: { user: true, product: true } });
+          }
+        }
         if (order) {
-          const paidAmount = order.paidAmount + amount;
+          const paidAmount = Math.max(order.paidAmount, Math.min(order.totalAmount, amount));
           const paidInFull = paidAmount >= order.totalAmount;
+          const downloadLinks = paidInFull ? await resolveStripeDigitalDownloads(checkout, order) : undefined;
           await prisma.order.update({
             where: { id: orderId },
             data: {
               paidAmount,
               status: paidInFull ? "PAID" : "MIXING",
-              finalFilesUrl: paidInFull && digitalDownloads ? digitalDownloads : order.finalFilesUrl
+              finalFilesUrl: paidInFull && downloadLinks ? downloadLinks : order.finalFilesUrl
             }
           });
+          if (paidInFull) await processOrderCommission(orderId);
           await sendPaymentEmail(
             order.user.email,
             order.product?.title ?? order.serviceType ?? "Orden Ellbopa",
             formatDop(amount),
-            paidInFull && digitalDownloads ? `${siteUrl}/descargas/${orderId}` : undefined
+            paidInFull && downloadLinks ? `${siteUrl}/descargas/${orderId}` : undefined
           );
         }
       } catch (error) {
@@ -73,14 +105,14 @@ export async function POST(request: Request) {
           await updateLocalOrder(orderId, {
             paidAmount,
             status: paidInFull ? "PAID" : "MIXING",
-            finalFilesUrl: paidInFull && digitalDownloads ? digitalDownloads : localOrder.finalFilesUrl
+            finalFilesUrl: localOrder.finalFilesUrl
           });
           if (userEmail) {
             await sendPaymentEmail(
               userEmail,
               localOrder.product?.title ?? localOrder.serviceType ?? "Orden Ellbopa",
               formatDop(amount),
-              paidInFull && digitalDownloads ? `${siteUrl}/descargas/${orderId}` : undefined
+              paidInFull && localOrder.finalFilesUrl ? `${siteUrl}/descargas/${orderId}` : undefined
             );
           }
         }
@@ -124,7 +156,7 @@ export async function POST(request: Request) {
       if (session) {
         await prisma.payment.updateMany({
           where: { stripeSessionId: session.id },
-          data: { status: "PAID" }
+          data: { status: "PAID", paymentIntentId: intent.id }
         });
       }
     } catch {

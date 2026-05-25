@@ -1,7 +1,7 @@
 import { ProductType } from "@prisma/client";
-import net from "node:net";
 import { prisma } from "@/lib/prisma";
 import { getLocalProducts } from "@/lib/local-products";
+import { canUseDatabase } from "@/lib/db-availability";
 
 export const fallbackProducts = [
   {
@@ -101,6 +101,22 @@ export const fallbackProducts = [
     createdAt: new Date()
   },
   {
+    id: "drum-kit-dembow-rgb",
+    title: "Dembow RGB Drum Kit",
+    type: ProductType.SOUND_KIT,
+    genre: "Dembow",
+    bpm: null,
+    musicalKey: null,
+    mood: "Percusion premium",
+    description: "Pack de kicks, snares, hats y loops urbanos para crear dembow moderno.",
+    price: 2500,
+    audioUrl: null,
+    imageUrl: "/images/preset-cover.svg",
+    fileUrl: "/downloads/dembow-rgb-drum-kit.zip",
+    active: true,
+    createdAt: new Date()
+  },
+  {
     id: "trap-vocal-chain",
     title: "Trap Vocal Chain",
     type: ProductType.PRESET,
@@ -185,15 +201,8 @@ export const fallbackProducts = [
 export async function getProducts(type?: ProductType) {
   const localProducts = await getLocalProducts(type);
 
-  if (!process.env.DATABASE_URL) {
-    return [...localProducts, ...fallbackProducts.filter((product) => !type || product.type === type)];
-  }
-
-  if (process.env.DATABASE_URL.includes("localhost:5432") || process.env.DATABASE_URL.includes("127.0.0.1:5432")) {
-    const reachable = await canReachLocalPostgres();
-    if (!reachable) {
-      return [...localProducts, ...fallbackProducts.filter((product) => !type || product.type === type)];
-    }
+  if (!(await canUseDatabase())) {
+    return dedupeProducts([...localProducts, ...fallbackProducts.filter((product) => !type || product.type === type)]);
   }
 
   try {
@@ -201,22 +210,12 @@ export async function getProducts(type?: ProductType) {
       where: { active: true, ...(type ? { type } : {}) },
       orderBy: { createdAt: "desc" }
     });
-    return [...localProducts, ...dbProducts];
+    return dedupeProducts([...localProducts, ...dbProducts]);
   } catch {
-    return [...localProducts, ...fallbackProducts.filter((product) => !type || product.type === type)];
+    return dedupeProducts([...localProducts, ...fallbackProducts.filter((product) => !type || product.type === type)]);
   }
 }
 
-function canReachLocalPostgres() {
-  return new Promise<boolean>((resolve) => {
-    const socket = net.createConnection({ host: "127.0.0.1", port: 5432 });
-    const done = (value: boolean) => {
-      socket.destroy();
-      resolve(value);
-    };
-    socket.setTimeout(250);
-    socket.once("connect", () => done(true));
-    socket.once("timeout", () => done(false));
-    socket.once("error", () => done(false));
-  });
+function dedupeProducts<T extends { id: string }>(products: T[]) {
+  return Array.from(new Map(products.map((product) => [product.id, product])).values());
 }

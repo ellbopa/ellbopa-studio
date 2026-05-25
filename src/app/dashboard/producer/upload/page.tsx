@@ -1,10 +1,12 @@
 import { Upload } from "lucide-react";
 import { requireDashboardRole } from "@/app/dashboard/_lib";
+import { ProductUploadForm } from "@/components/product-upload-form";
 
 export const metadata = { title: "Subir Beat" };
 
 export default async function ProducerUploadPage() {
   await requireDashboardRole("PRODUCER");
+  const uploadConfigured = Boolean(process.env.UPLOADTHING_TOKEN || (process.env.UPLOADTHING_SECRET && process.env.UPLOADTHING_APP_ID));
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-14 sm:px-6">
@@ -20,32 +22,8 @@ export default async function ProducerUploadPage() {
             <p className="mt-2 text-sm text-white/45">MP3 preview, WAV/ZIP/STEMS y cover art</p>
           </div>
         </div>
-        <form action="/api/admin/upload-product" method="POST" encType="multipart/form-data" className="grid gap-4 md:grid-cols-3">
-          <Input name="title" label="Titulo" required />
-          <label className="field">Tipo<select name="type" className="control"><option value="BEAT">Beat / Instrumental</option><option value="PRESET">Sound Kit / Preset</option></select></label>
-          <Input name="genre" label="Genero" placeholder="Trap, R&B, Dembow" />
-          <Input name="bpm" label="BPM" type="number" />
-          <Input name="musicalKey" label="Key" placeholder="Fm, C#m..." />
-          <Input name="mood" label="Mood" placeholder="Dark, luxury, street" />
-          <Input name="price" label="Basic RD$" type="number" required />
-          <Input name="premiumPrice" label="Premium RD$" type="number" />
-          <Input name="exclusivePrice" label="Exclusive RD$" type="number" />
-          <label className="field">Cover art<input name="image" type="file" accept="image/*" className="control" /></label>
-          <label className="field">Audio preview<input name="audio" type="file" accept=".mp3,.wav,.m4a" className="control" /></label>
-          <label className="field">Digital file<input name="file" type="file" accept=".zip,.wav,.mp3,.rar" className="control" /></label>
-          <label className="field md:col-span-3">Descripcion<textarea name="description" required rows={3} className="control" /></label>
-          <button className="rounded-md bg-studio-red px-5 py-3 font-black text-white glow-button md:col-span-3">Publicar producto</button>
-        </form>
+        <ProductUploadForm uploadConfigured={uploadConfigured} returnTo="producer" />
       </section>
     </main>
-  );
-}
-
-function Input({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
-  return (
-    <label className="field">
-      {label}
-      <input {...props} className="control" />
-    </label>
   );
 }

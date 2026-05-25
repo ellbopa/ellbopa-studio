@@ -7,7 +7,6 @@ import {
   ChevronDown,
   Cloud,
   CreditCard,
-  Database,
   Disc3,
   FileAudio,
   FolderOpen,
@@ -18,7 +17,6 @@ import {
   LayoutDashboard,
   MessageSquare,
   Music2,
-  PackagePlus,
   Search,
   Settings,
   ShoppingBag,
@@ -29,7 +27,7 @@ import {
   Wallet,
   WandSparkles
 } from "lucide-react";
-import { ProductType, WorkStatus } from "@prisma/client";
+import { WorkStatus } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDop } from "@/lib/format";
@@ -38,6 +36,9 @@ import { getLocalBookings, getLocalOrders, getLocalPayments } from "@/lib/local-
 import { getProducts } from "@/lib/products";
 import { isConfiguredAdminEmail } from "@/lib/config";
 import { getActivity } from "@/lib/activity";
+import { getNotifications } from "@/lib/notifications";
+import { ProductUploadForm } from "@/components/product-upload-form";
+import { PLATFORM_FEE_PERCENT } from "@/lib/wallet";
 
 export const metadata = { title: "Studio OS | Admin" };
 
@@ -52,6 +53,7 @@ const navItems = [
   ["Orders", "#orders", CreditCard],
   ["Customers", "#customers", Users],
   ["Analytics", "#analytics", BarChart3],
+  ["Notifications", "#notifications", Bell],
   ["Messages", "#messages", MessageSquare],
   ["File Storage", "#storage", FolderOpen],
   ["Discounts", "#settings", Gift],
@@ -72,16 +74,21 @@ export default async function AdminPage() {
   let products: Array<any> = [];
   let payments: Array<any> = [];
   let users: Array<any> = [];
+  let payoutRequests: Array<any> = [];
+  let wallets: Array<any> = [];
   const siteConfig = await getSiteConfig();
   const activity = await getActivity();
+  const notifications = await getNotifications();
 
   try {
-    [orders, bookings, products, payments, users] = await Promise.all([
+    [orders, bookings, products, payments, users, payoutRequests, wallets] = await Promise.all([
       prisma.order.findMany({ include: { user: true, product: true }, orderBy: { createdAt: "desc" } }),
       prisma.booking.findMany({ include: { user: true }, orderBy: { createdAt: "desc" } }),
       prisma.product.findMany({ orderBy: { createdAt: "desc" } }),
       prisma.payment.findMany({ include: { user: true }, orderBy: { createdAt: "desc" } }),
-      prisma.user.findMany({ orderBy: { createdAt: "desc" }, take: 50 })
+      prisma.user.findMany({ orderBy: { createdAt: "desc" }, take: 50 }),
+      prisma.payoutRequest.findMany({ include: { user: true }, orderBy: { createdAt: "desc" }, take: 50 }),
+      prisma.wallet.findMany({ include: { user: true }, orderBy: { updatedAt: "desc" }, take: 50 })
     ]);
   } catch {
     [orders, bookings, products, payments] = await Promise.all([
@@ -96,9 +103,7 @@ export default async function AdminPage() {
   const paidPayments = payments.filter((payment) => payment.status === "PAID");
   const revenue = paidPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0) || orders.reduce((sum, order) => sum + Number(order.paidAmount || 0), 0);
   const soldProducts = orders.filter((order) => order.productId && Number(order.paidAmount || 0) > 0).length;
-  const pendingOrders = orders.filter((order) => order.status === "PENDING").length;
   const pendingBookings = bookings.filter((booking) => booking.status === "PENDING").length;
-  const completedOrders = orders.filter((order) => order.status === "COMPLETED").length;
   const topBuyers = getTopBuyers(orders, payments);
   const topItems = getTopItems(orders);
   const pageViews = getPageViews(activity.recent);
@@ -107,6 +112,9 @@ export default async function AdminPage() {
   const digitalProducts = products.filter((product) => product.type === "BEAT" || product.type === "PRESET");
   const storageItems = getStorageItems(products);
   const conversion = orders.length ? Math.round((paidPayments.length / orders.length) * 100) : 0;
+  const uploadConfigured = Boolean(process.env.UPLOADTHING_TOKEN || (process.env.UPLOADTHING_SECRET && process.env.UPLOADTHING_APP_ID));
+  const platformFees = orders.reduce((sum, order) => sum + Number(order.platformFeeAmount || 0), 0);
+  const creatorBalances = wallets.reduce((sum, wallet) => sum + Number(wallet.availableBalance || 0) + Number(wallet.pendingBalance || 0), 0);
 
   return (
     <main className="min-h-screen bg-[#030303] text-white">
@@ -260,22 +268,9 @@ export default async function AdminPage() {
 
               <div id="create-track" className="panel p-5 sm:p-6">
                 <h2 className="font-display text-2xl font-black">Create Track</h2>
-                <form action="/api/admin/upload-product" method="POST" encType="multipart/form-data" className="mt-5 grid gap-4 md:grid-cols-3">
-                  <Input name="title" label="Titulo" required />
-                  <label className="field">Tipo<select name="type" className="control"><option value="BEAT">Beat / Instrumental</option><option value="PRESET">Preset / Template / Chain</option><option value="SERVICE">Servicio</option></select></label>
-                  <Input name="genre" label="Genero" placeholder="Trap, R&B, Dembow" />
-                  <Input name="bpm" label="BPM" type="number" />
-                  <Input name="musicalKey" label="Key" placeholder="Fm, C#m..." />
-                  <Input name="mood" label="Mood" placeholder="Dark, luxury, street" />
-                  <Input name="price" label="Basic RD$" type="number" required />
-                  <Input name="premiumPrice" label="Premium RD$" type="number" />
-                  <Input name="exclusivePrice" label="Exclusive RD$" type="number" />
-                  <label className="field">Cover art<input name="image" type="file" accept="image/*" className="control" /></label>
-                  <label className="field">Audio preview<input name="audio" type="file" accept=".mp3,.wav,.m4a" className="control" /></label>
-                  <label className="field">Digital file<input name="file" type="file" accept=".zip,.wav,.mp3,.rar" className="control" /></label>
-                  <label className="field md:col-span-3">Descripcion<textarea name="description" required rows={3} className="control" /></label>
-                  <button className="rounded-xl bg-red-600 px-5 py-3 font-black shadow-[0_0_35px_rgba(255,0,32,0.34)] md:col-span-3">Publicar track</button>
-                </form>
+                <div className="mt-5">
+                  <ProductUploadForm uploadConfigured={uploadConfigured} returnTo="admin" />
+                </div>
               </div>
             </section>
 
@@ -331,7 +326,80 @@ export default async function AdminPage() {
 
             <section id="messages" className="grid gap-6 xl:grid-cols-2">
               <PlaceholderPanel title="Messages" icon={MessageSquare} text="Inbox premium preparado para chat en vivo, archivos, audio previews y notificaciones." />
-              <PlaceholderPanel title="Payouts" icon={Wallet} text="Resumen de pagos, transferencias, saldo disponible y conciliacion Stripe/Banreservas." />
+              <section id="payouts" className="panel p-6">
+                <SectionTitle title="Payouts" text={`Marketplace gratis: ${PLATFORM_FEE_PERCENT}% para Ellbopa y 80% para creadores.`} badge={`${payoutRequests.filter((item) => item.status === "PENDING").length} pendientes`} />
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  <Metric icon={Wallet} label="Ganancia plataforma" value={formatDop(platformFees)} detail="Comisiones acumuladas" />
+                  <Metric icon={CreditCard} label="Balance creadores" value={formatDop(creatorBalances)} detail="Disponible + pendiente" />
+                  <Metric icon={Users} label="Wallets" value={wallets.length} detail="Creadores con balance" />
+                </div>
+                <div className="mt-5 space-y-3">
+                  {payoutRequests.length === 0 ? <Empty text="Sin solicitudes de payout todavia." /> : null}
+                  {payoutRequests.map((payout) => (
+                    <form key={payout.id} action="/api/admin/payouts" method="POST" className="grid gap-3 rounded-2xl border border-white/10 bg-black/35 p-4 lg:grid-cols-[1fr_160px_1fr_auto]">
+                      <input type="hidden" name="id" value={payout.id} />
+                      <div>
+                        <p className="font-bold">{payout.user?.name || payout.user?.email || payout.userId}</p>
+                        <p className="mt-1 text-sm text-white/50">{payout.method} / {payout.status} / {formatAdminDate(payout.createdAt)}</p>
+                        {payout.note ? <p className="mt-1 text-xs text-white/40">{payout.note}</p> : null}
+                      </div>
+                      <strong className="text-studio-gold">{formatDop(payout.amount)}</strong>
+                      <input name="adminNote" placeholder="Nota admin" className="control" />
+                      <div className="flex flex-wrap gap-2">
+                        <button name="action" value="APPROVED" className="rounded-lg border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-black">Aprobar</button>
+                        <button name="action" value="REJECTED" className="rounded-lg border border-studio-gold/30 bg-studio-gold/10 px-3 py-2 text-xs font-black text-studio-gold">Rechazar</button>
+                        <button name="action" value="PAID" className="rounded-lg bg-red-600 px-3 py-2 text-xs font-black">Pagado</button>
+                      </div>
+                    </form>
+                  ))}
+                </div>
+              </section>
+            </section>
+
+            <section id="notifications" className="panel p-5 sm:p-6">
+              <SectionTitle title="Notificaciones" text="Envia avisos desde admin. La campanita solo muestra badge cuando hay una notificacion activa." badge={`${notifications.filter((item) => item.active).length} activas`} />
+              <form action="/api/admin/notifications" method="POST" className="mt-5 grid gap-4 md:grid-cols-[1fr_220px]">
+                <Input name="title" label="Titulo" placeholder="Nuevo drop disponible" required />
+                <label className="field">
+                  Audiencia
+                  <select name="audience" defaultValue="ALL" className="control">
+                    <option value="ALL">Todos</option>
+                    <option value="ARTIST">Artistas</option>
+                    <option value="PRODUCER">Productores</option>
+                    <option value="ENGINEER">Ingenieros</option>
+                    <option value="STUDIO">Estudios</option>
+                  </select>
+                </label>
+                <label className="field md:col-span-2">
+                  Mensaje
+                  <textarea name="message" rows={4} placeholder="Escribe lo que quieres que vea el cliente en la campanita." className="control" required />
+                </label>
+                <button className="rounded-xl bg-red-600 px-5 py-3 font-black shadow-[0_0_35px_rgba(255,0,32,0.34)] md:col-span-2">Enviar notificacion</button>
+              </form>
+              <div className="mt-5 grid gap-3 lg:grid-cols-2">
+                {notifications.length === 0 ? <Empty text="No hay notificaciones enviadas. La campanita publica queda limpia." /> : null}
+                {notifications.slice(0, 6).map((notification) => (
+                  <div key={notification.id} className="rounded-2xl border border-white/10 bg-black/35 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-black">{notification.title}</p>
+                        <p className="mt-1 text-sm text-white/52">{notification.message}</p>
+                      </div>
+                      <span className="shrink-0 rounded-full border border-red-400/25 bg-red-500/10 px-3 py-1 text-xs font-black text-studio-gold">{notification.audience}</span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-xs uppercase tracking-[0.14em] text-white/35">{formatAdminDate(notification.createdAt)} / {notification.active ? "Activa" : "Inactiva"}</p>
+                      <form action="/api/admin/notifications" method="POST">
+                        <input type="hidden" name="id" value={notification.id} />
+                        <input type="hidden" name="action" value={notification.active ? "deactivate" : "activate"} />
+                        <button className="rounded-lg border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-black text-white/72 transition hover:border-red-400/35 hover:text-white">
+                          {notification.active ? "Apagar badge" : "Activar badge"}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </section>
 
             <section id="settings" className="panel p-5 sm:p-6">

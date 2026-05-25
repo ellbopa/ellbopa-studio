@@ -9,6 +9,7 @@ type PresetCardProps = {
   product: {
     id: string;
     title: string;
+    type?: string;
     genre?: string | null;
     mood?: string | null;
     description: string;
@@ -72,7 +73,7 @@ export async function PresetCard({ product, index = 0 }: PresetCardProps) {
             item={{
               id: product.id,
               title: product.title,
-              type: "PRESET",
+              type: product.type || "PRESET",
               price: product.price,
               imageUrl: product.imageUrl,
               genre: product.genre

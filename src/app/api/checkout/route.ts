@@ -8,12 +8,25 @@ import { saveLocalOrder, saveLocalPayment, updateLocalOrder } from "@/lib/local-
 import type { CartItem } from "@/lib/cart";
 import { findLicenseOption } from "@/lib/licensing";
 import { getClientIp, isRateLimited } from "@/lib/rate-limit";
+import { ensurePrismaProduct } from "@/lib/catalog-product-sync";
 
 type CheckoutProduct = {
   id: string;
   title: string;
   type: string;
   price: number;
+  ownerId?: string | null;
+  imageUrl?: string | null;
+  audioUrl?: string | null;
+};
+
+type CheckoutMetadata = {
+  productId?: string;
+  productIds?: string;
+  licenseType?: string;
+  licenseTypes?: string;
+  productType?: string;
+  productTypes?: string;
 };
 
 export async function POST(request: Request) {
@@ -40,13 +53,13 @@ export async function POST(request: Request) {
   const mode = String(formData.get("mode") ?? "deposit");
   const paymentMethod = String(formData.get("paymentMethod") ?? "stripe");
   const license = String(formData.get("license") ?? "basic");
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
 
   let title = "Ellbopa Music";
   let amount = 0;
   let targetOrderId: string | undefined;
   let targetBookingId: string | undefined;
-  let digitalDownloads = "";
+  let checkoutMetadata: CheckoutMetadata = {};
 
   try {
     if (cartJson) {
@@ -64,26 +77,38 @@ export async function POST(request: Request) {
             title: product.title,
             type: product.type,
             genre: product.genre,
-            fileUrl: product.fileUrl,
             licenseTitle: option?.title ?? cartItem.licenseLabel ?? null,
+            licenseType: option?.key ?? cartItem.license ?? "digital",
             price: option?.price ?? product.price
           };
         })
-        .filter(Boolean) as Array<{ product: CheckoutProduct & { fileUrl?: string | null; genre?: string | null }; title: string; type: string; genre?: string | null; fileUrl?: string | null; licenseTitle?: string | null; price: number }>;
+        .filter(Boolean) as Array<{ product: CheckoutProduct & { fileUrl?: string | null; genre?: string | null }; title: string; type: string; genre?: string | null; licenseTitle?: string | null; licenseType: string; price: number }>;
 
       if (selected.length === 0) return NextResponse.json({ error: "Products not found" }, { status: 404 });
+      if (selected.some((item) => isDigitalProduct(item.type) && !item.product.fileUrl)) {
+        return NextResponse.redirect(new URL("/carrito?error=missing-file", request.url), { status: 303 });
+      }
+
+      for (const item of selected) {
+        const syncedProduct = await ensurePrismaProduct(item.product.id, item.product, item.product.ownerId);
+        if (!syncedProduct) return NextResponse.json({ error: "Product could not be synced" }, { status: 500 });
+        item.product = { ...item.product, ownerId: syncedProduct.ownerId, fileUrl: syncedProduct.fileUrl };
+      }
 
       amount = selected.reduce((sum, product) => sum + product.price, 0);
       title = selected.length === 1 ? selected[0].title : `Compra Ellbopa (${selected.length} productos)`;
-      digitalDownloads = selected
-        .map((item) => [item.licenseTitle ? `${item.title} (${item.licenseTitle})` : item.title, item.fileUrl].filter(Boolean).join(": "))
-        .filter(Boolean)
-        .join("\n");
+      checkoutMetadata = {
+        productIds: selected.map((item) => item.product.id).join(","),
+        productTypes: selected.map((item) => item.type).join(","),
+        licenseTypes: selected.map((item) => item.licenseType).join(",")
+      };
 
       try {
         const order = await prisma.order.create({
           data: {
             userId: session.user.id,
+            productId: selected.length === 1 ? selected[0].product.id : undefined,
+            creatorId: selected.length === 1 ? selected[0].product.ownerId ?? undefined : undefined,
             serviceType: title,
             totalAmount: amount,
             depositAmount: amount,
@@ -114,6 +139,21 @@ export async function POST(request: Request) {
       const fallbackProduct = (await getProducts()).find((item) => item.id === productId);
       if (!product && fallbackProduct) product = fallbackProduct;
       if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+      const syncedProduct = await ensurePrismaProduct(product.id, product, product.ownerId);
+      if (syncedProduct) {
+        product = {
+          ...product,
+          ownerId: syncedProduct.ownerId,
+          fileUrl: syncedProduct.fileUrl,
+          audioUrl: syncedProduct.audioUrl,
+          imageUrl: syncedProduct.imageUrl,
+          premiumPrice: syncedProduct.premiumPrice,
+          exclusivePrice: syncedProduct.exclusivePrice
+        };
+      }
+      if (isDigitalProduct(product.type) && !product.fileUrl) {
+        return NextResponse.redirect(new URL(`/checkout?productId=${encodeURIComponent(product.id)}&error=missing-file`, request.url), { status: 303 });
+      }
       const selectedLicense = product.type === "BEAT" ? findLicenseOption(product, license) : null;
       const productPrice = selectedLicense?.price ?? product.price;
       const depositAmount = Math.ceil(productPrice * 0.5);
@@ -122,6 +162,7 @@ export async function POST(request: Request) {
           data: {
             userId: session.user.id,
             productId: product.id,
+            creatorId: product.ownerId ?? undefined,
             serviceType: selectedLicense ? `${product.type} / ${selectedLicense.title}` : product.type,
             totalAmount: productPrice,
             depositAmount,
@@ -144,8 +185,11 @@ export async function POST(request: Request) {
       title = product.title;
       if (selectedLicense) title = `${product.title} (${selectedLicense.title})`;
       amount = mode === "deposit" ? depositAmount : productPrice;
-      const downloadProduct = (await getProducts()).find((item) => item.id === productId);
-      digitalDownloads = downloadProduct?.fileUrl ? `${downloadProduct.title}: ${downloadProduct.fileUrl}` : "";
+      checkoutMetadata = {
+        productId: product.id,
+        productType: product.type,
+        licenseType: selectedLicense?.key ?? "digital"
+      };
     }
 
     if (orderId) {
@@ -172,10 +216,10 @@ export async function POST(request: Request) {
     try {
       await prisma.order.update({
         where: { id: targetOrderId },
-        data: { status: "PAID", paidAmount: 0, finalFilesUrl: digitalDownloads || undefined }
+        data: { status: "PAID", paidAmount: 0 }
       });
     } catch {
-      await updateLocalOrder(targetOrderId, { status: "PAID", paidAmount: 0, finalFilesUrl: digitalDownloads || undefined });
+      await updateLocalOrder(targetOrderId, { status: "PAID", paidAmount: 0 });
     }
     return NextResponse.redirect(new URL(`/compras?success=free&order=${targetOrderId}`, request.url), { status: 303 });
   }
@@ -208,6 +252,17 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (process.env.NODE_ENV === "development") {
+      console.error("[checkout][creating-stripe-session]", {
+        userId: session.user.id,
+        orderId: targetOrderId,
+        bookingId: targetBookingId,
+        amount,
+        productId: checkoutMetadata.productId,
+        productIds: checkoutMetadata.productIds
+      });
+    }
+
     const checkout = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -227,10 +282,15 @@ export async function POST(request: Request) {
         orderId: targetOrderId ?? "",
         bookingId: targetBookingId ?? "",
         amount: String(amount),
-        digitalDownloads
+        productId: checkoutMetadata.productId ?? "",
+        productIds: checkoutMetadata.productIds ?? "",
+        licenseType: checkoutMetadata.licenseType ?? "",
+        licenseTypes: checkoutMetadata.licenseTypes ?? "",
+        productType: checkoutMetadata.productType ?? "",
+        productTypes: checkoutMetadata.productTypes ?? ""
       },
-      success_url: `${siteUrl}/compras?success=1`,
-      cancel_url: `${siteUrl}/cliente?cancelled=1`
+      success_url: `${siteUrl}/compras?success=1&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${siteUrl}/compras?cancelled=1`
     });
 
     try {
@@ -240,10 +300,20 @@ export async function POST(request: Request) {
           orderId: targetOrderId,
           bookingId: targetBookingId,
           stripeSessionId: checkout.id,
+          paymentIntentId: typeof checkout.payment_intent === "string" ? checkout.payment_intent : checkout.payment_intent?.id,
           amount,
           receiptUrl: checkout.url
         }
       });
+      if (process.env.NODE_ENV === "development") {
+        console.error("[checkout][payment-created]", {
+          userId: session.user.id,
+          orderId: targetOrderId,
+          bookingId: targetBookingId,
+          stripeSessionId: checkout.id,
+          amount
+        });
+      }
     } catch (error) {
       console.error("[checkout][stripe payment local]", error);
       await saveLocalPayment({
@@ -251,6 +321,7 @@ export async function POST(request: Request) {
         orderId: targetOrderId,
         bookingId: targetBookingId,
         stripeSessionId: checkout.id,
+        paymentIntentId: typeof checkout.payment_intent === "string" ? checkout.payment_intent : checkout.payment_intent?.id,
         amount,
         receiptUrl: checkout.url
       });
@@ -270,4 +341,8 @@ function parseCart(value: string) {
   } catch {
     return [];
   }
+}
+
+function isDigitalProduct(type?: string | null) {
+  return type === "BEAT" || type === "PRESET" || type === "SOUND_KIT";
 }

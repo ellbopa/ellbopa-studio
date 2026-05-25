@@ -8,6 +8,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hasAppleConfig, hasFacebookConfig, hasGoogleConfig, isConfiguredAdminEmail } from "@/lib/config";
 import { normalizeRole } from "@/lib/roles";
+import { findLocalUserByEmail } from "@/lib/local-users";
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -65,7 +66,21 @@ export const authConfig = {
           const user = await prisma.user.findUnique({
             where: { email: parsed.data.email }
           });
-          if (!user?.passwordHash) return fallback;
+          if (!user?.passwordHash) {
+            const localUser = await findLocalUserByEmail(parsed.data.email);
+            if (localUser && await bcrypt.compare(parsed.data.password, localUser.passwordHash)) {
+              return {
+                id: localUser.id,
+                name: localUser.name,
+                email: localUser.email,
+                role: localUser.role,
+                phone: localUser.phone,
+                verified: localUser.verified,
+                onboardingCompleted: localUser.onboardingCompleted
+              };
+            }
+            return fallback;
+          }
           if (!user.verified) return null;
 
           const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
@@ -84,6 +99,18 @@ export const authConfig = {
           console.error("[auth][credentials authorize]", error);
           const parsed = credentialsSchema.safeParse(credentials);
           if (!parsed.success) return null;
+          const localUser = await findLocalUserByEmail(parsed.data.email);
+          if (localUser && await bcrypt.compare(parsed.data.password, localUser.passwordHash)) {
+            return {
+              id: localUser.id,
+              name: localUser.name,
+              email: localUser.email,
+              role: localUser.role,
+              phone: localUser.phone,
+              verified: localUser.verified,
+              onboardingCompleted: localUser.onboardingCompleted
+            };
+          }
           return demoUser(parsed.data.email, parsed.data.password);
         }
       }
@@ -173,17 +200,26 @@ export const authConfig = {
         token.role = isAdminEmail(profileEmail) ? "ADMIN" : "ARTIST";
         token.verified = true;
       }
-      if (token.email && (!token.role || token.verified === undefined)) {
+      if (token.email) {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { email: token.email },
-            select: { role: true, phone: true, verified: true, onboardingCompleted: true }
+            select: { id: true, role: true, phone: true, verified: true, onboardingCompleted: true }
           });
           if (dbUser) {
+            token.sub = dbUser.id;
             token.role = normalizeRole(dbUser.role);
             token.phone = dbUser.phone;
             token.verified = dbUser.verified;
             token.onboardingCompleted = dbUser.onboardingCompleted;
+          } else {
+            const localUser = await findLocalUserByEmail(token.email);
+            if (localUser) {
+              token.role = localUser.role;
+              token.phone = localUser.phone;
+              token.verified = localUser.verified;
+              token.onboardingCompleted = localUser.onboardingCompleted;
+            }
           }
         } catch (error) {
           console.error("[auth][jwt load user]", error);
