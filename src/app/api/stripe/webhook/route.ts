@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     try {
       await prisma.payment.updateMany({
         where: { stripeSessionId: checkout.id },
-        data: { status: "PAID", receiptUrl: checkout.url ?? undefined, paymentIntentId }
+        data: { status: "PAID", receiptUrl: checkout.url ?? undefined, paymentIntentId, method: "STRIPE" }
       });
     } catch (error) {
       console.error("[stripe-webhook][payment local]", error);

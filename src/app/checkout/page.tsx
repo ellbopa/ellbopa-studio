@@ -124,6 +124,14 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
                     Buy now
                   </button>
                 </form>
+                <form action="/api/checkout" method="POST" className="contents">
+                  <input type="hidden" name="productId" value={product.id} />
+                  <input type="hidden" name="mode" value="full" />
+                  <input type="hidden" name="license" value={selectedLicense.key} />
+                  <button name="paymentMethod" value="paypal" className="rounded-md border border-blue-400/45 bg-blue-500/10 px-7 py-4 font-black text-blue-100 transition hover:bg-blue-600 hover:text-white">
+                    PayPal
+                  </button>
+                </form>
               </div>
             )}
           </div>
@@ -156,6 +164,11 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
         {error === "missing-file" ? (
           <div className="mt-5 rounded-lg border border-studio-gold/25 bg-studio-gold/10 p-4 text-sm font-bold text-studio-gold">
             Este producto todavia no tiene archivo final configurado. El admin debe subir el ZIP/WAV/MP3 antes de venderlo.
+          </div>
+        ) : null}
+        {error === "paypal-not-configured" ? (
+          <div className="mt-5 rounded-lg border border-blue-400/25 bg-blue-500/10 p-4 text-sm font-bold text-blue-100">
+            PayPal todavia no esta configurado. Agrega PAYPAL_CLIENT_ID y PAYPAL_CLIENT_SECRET para activar este metodo.
           </div>
         ) : null}
       </div>
@@ -275,6 +288,19 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
                   <span>
                     <span className="block font-display text-xl font-black">Pagar con tarjeta</span>
                     <span className="mt-1 block text-sm text-white/70">Checkout seguro con Stripe en modo prueba.</span>
+                  </span>
+                </button>
+              </form>
+
+              <form action="/api/checkout" method="POST">
+                <input type="hidden" name="productId" value={product.id} />
+                <input type="hidden" name="mode" value="full" />
+                {selectedLicense ? <input type="hidden" name="license" value={selectedLicense.key} /> : null}
+                <button name="paymentMethod" value="paypal" className="group flex w-full items-center gap-4 rounded-lg border border-blue-400/45 bg-blue-500/10 px-5 py-5 text-left text-blue-100 transition hover:-translate-y-0.5 hover:bg-blue-600 hover:text-white">
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-black/25"><CreditCard size={22} /></span>
+                  <span>
+                    <span className="block font-display text-xl font-black">Pagar con PayPal</span>
+                    <span className="mt-1 block text-sm opacity-75">Checkout PayPal seguro para clientes internacionales.</span>
                   </span>
                 </button>
               </form>

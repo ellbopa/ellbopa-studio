@@ -368,6 +368,7 @@ model Payment {
   bookingId       String?
   stripeSessionId String     @unique
   paymentIntentId String?
+  method          String     @default("STRIPE")
   amount          Int
   status          WorkStatus @default(PENDING)
   receiptUrl      String?

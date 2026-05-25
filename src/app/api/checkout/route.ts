@@ -9,6 +9,7 @@ import type { CartItem } from "@/lib/cart";
 import { findLicenseOption } from "@/lib/licensing";
 import { getClientIp, isRateLimited } from "@/lib/rate-limit";
 import { ensurePrismaProduct } from "@/lib/catalog-product-sync";
+import { createPayPalCheckout, hasPayPalConfig } from "@/lib/paypal";
 
 type CheckoutProduct = {
   id: string;
@@ -112,6 +113,10 @@ export async function POST(request: Request) {
             serviceType: title,
             totalAmount: amount,
             depositAmount: amount,
+            finalFilesUrl: selected
+              .filter((item) => isDigitalProduct(item.type) && item.product.fileUrl)
+              .map((item) => `${item.title}: ${item.product.fileUrl}`)
+              .join("\n") || undefined,
             notes: selected.map((item) => `${item.title} / ${item.type} / ${item.licenseTitle ?? "Digital"} / ${item.genre ?? "Digital"}`).join("\n")
           }
         });
@@ -166,6 +171,7 @@ export async function POST(request: Request) {
             serviceType: selectedLicense ? `${product.type} / ${selectedLicense.title}` : product.type,
             totalAmount: productPrice,
             depositAmount,
+            finalFilesUrl: isDigitalProduct(product.type) && product.fileUrl ? `${product.title}: ${product.fileUrl}` : undefined,
             notes: selectedLicense ? `Licencia: ${selectedLicense.title}\nArchivos: ${selectedLicense.files}` : undefined
           }
         });
@@ -228,7 +234,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Checkout amount missing" }, { status: 400 });
   }
 
-  if (paymentMethod === "transfer" || !hasStripeConfig()) {
+  if (paymentMethod === "transfer" || (paymentMethod === "stripe" && !hasStripeConfig())) {
     try {
       await prisma.payment.create({
         data: {
@@ -236,6 +242,7 @@ export async function POST(request: Request) {
           orderId: targetOrderId,
           bookingId: targetBookingId,
           stripeSessionId: `transfer-${Date.now()}`,
+          method: "TRANSFER",
           amount
         }
       });
@@ -249,6 +256,41 @@ export async function POST(request: Request) {
       });
     }
     return NextResponse.redirect(new URL(`/pagos?manual=1&amount=${amount}&order=${targetOrderId ?? ""}&booking=${targetBookingId ?? ""}`, request.url), { status: 303 });
+  }
+
+  if (paymentMethod === "paypal") {
+    if (!hasPayPalConfig()) {
+      return NextResponse.redirect(new URL(`/checkout?${productId ? `productId=${encodeURIComponent(productId)}&` : ""}error=paypal-not-configured`, request.url), { status: 303 });
+    }
+
+    try {
+      const paypal = await createPayPalCheckout({
+        userId: session.user.id,
+        orderId: targetOrderId,
+        bookingId: targetBookingId,
+        title,
+        amount,
+        returnUrl: `${siteUrl}/api/paypal/capture`,
+        cancelUrl: `${siteUrl}/compras?cancelled=1&provider=paypal`
+      });
+
+      await prisma.payment.create({
+        data: {
+          userId: session.user.id,
+          orderId: targetOrderId,
+          bookingId: targetBookingId,
+          stripeSessionId: `paypal-${paypal.paypalOrderId}`,
+          method: "PAYPAL",
+          amount,
+          receiptUrl: paypal.approvalUrl
+        }
+      });
+
+      return NextResponse.redirect(paypal.approvalUrl, { status: 303 });
+    } catch (error) {
+      console.error("[checkout][paypal]", error);
+      return NextResponse.redirect(new URL("/compras?cancelled=1&provider=paypal", request.url), { status: 303 });
+    }
   }
 
   try {
@@ -301,6 +343,7 @@ export async function POST(request: Request) {
           bookingId: targetBookingId,
           stripeSessionId: checkout.id,
           paymentIntentId: typeof checkout.payment_intent === "string" ? checkout.payment_intent : checkout.payment_intent?.id,
+          method: "STRIPE",
           amount,
           receiptUrl: checkout.url
         }

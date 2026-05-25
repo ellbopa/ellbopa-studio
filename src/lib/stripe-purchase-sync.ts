@@ -51,6 +51,7 @@ export async function syncStripeCheckoutSession(sessionId: string, userId: strin
       orderId,
       bookingId,
       paymentIntentId,
+      method: "STRIPE",
       amount,
       receiptUrl: checkout.url
     },
@@ -60,6 +61,7 @@ export async function syncStripeCheckoutSession(sessionId: string, userId: strin
       bookingId,
       stripeSessionId: checkout.id,
       paymentIntentId,
+      method: "STRIPE",
       amount,
       status: "PAID",
       receiptUrl: checkout.url

@@ -16,7 +16,7 @@ type PurchaseOrder = {
   id: string;
   productId?: string | null;
   product?: { title: string; type?: string; imageUrl?: string | null; fileUrl?: string | null } | null;
-  payments?: Array<{ status: string; amount: number; stripeSessionId?: string | null; createdAt?: Date | string }>;
+  payments?: Array<{ status: string; amount: number; stripeSessionId?: string | null; method?: string | null; createdAt?: Date | string }>;
   serviceType?: string | null;
   status: string;
   totalAmount: number;
@@ -124,6 +124,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
                 <div className="mt-1 flex justify-between gap-3"><span>Product</span><span className="truncate text-white/65">{order.productId ?? "sin producto directo"}</span></div>
                 <div className="mt-1 flex justify-between gap-3"><span>Status</span><span className="text-white/65">{order.status}</span></div>
                 <div className="mt-1 flex justify-between gap-3"><span>Payment</span><span className="text-white/65">{order.payments?.[0]?.status ?? "sin payment"}</span></div>
+                <div className="mt-1 flex justify-between gap-3"><span>Metodo</span><span className="text-white/65">{formatPaymentMethod(order.payments?.[0]?.method, order.payments?.[0]?.stripeSessionId)}</span></div>
               </div>
 
               {isOrderPaid(order) && (order.finalFilesUrl || order.product?.fileUrl) ? (
@@ -155,7 +156,7 @@ async function loadPurchases(userId: string): Promise<PurchaseOrder[]> {
         product: true,
         payments: {
           orderBy: { createdAt: "desc" },
-          select: { status: true, amount: true, stripeSessionId: true, createdAt: true }
+          select: { status: true, amount: true, stripeSessionId: true, method: true, createdAt: true }
         }
       },
       orderBy: { createdAt: "desc" }
@@ -187,6 +188,14 @@ function extractLicense(notes?: string | null) {
 function formatDate(date: Date | string) {
   const value = typeof date === "string" ? new Date(date) : date;
   return Number.isNaN(value.getTime()) ? String(date) : value.toLocaleDateString("es-DO");
+}
+
+function formatPaymentMethod(method?: string | null, sessionId?: string | null) {
+  if (method) return method;
+  if (sessionId?.startsWith("paypal-")) return "PAYPAL";
+  if (sessionId?.startsWith("transfer-")) return "TRANSFER";
+  if (sessionId?.startsWith("cs_")) return "STRIPE";
+  return "sin metodo";
 }
 
 function Stat({ label, value }: { label: string; value: number | string }) {

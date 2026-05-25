@@ -113,6 +113,8 @@ export default async function AdminPage() {
   const storageItems = getStorageItems(products);
   const conversion = orders.length ? Math.round((paidPayments.length / orders.length) * 100) : 0;
   const uploadConfigured = Boolean(process.env.UPLOADTHING_TOKEN || (process.env.UPLOADTHING_SECRET && process.env.UPLOADTHING_APP_ID));
+  const stripeMode = process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") ? "LIVE" : process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_") ? "TEST" : "NO CONFIG";
+  const paypalMode = process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET ? (process.env.PAYPAL_ENV === "live" ? "LIVE" : "SANDBOX") : "NO CONFIG";
   const platformFees = orders.reduce((sum, order) => sum + Number(order.platformFeeAmount || 0), 0);
   const creatorBalances = wallets.reduce((sum, wallet) => sum + Number(wallet.availableBalance || 0) + Number(wallet.pendingBalance || 0), 0);
 
@@ -198,6 +200,8 @@ export default async function AdminPage() {
                   <Metric icon={CalendarDays} label="Reservas" value={bookings.length} detail={`${pendingBookings} pendientes`} />
                   <Metric icon={Users} label="Clientes activos" value={activity.activeCount} detail={`${users.length || "Modo local"} registrados`} />
                   <Metric icon={Activity} label="Streams / plays" value={pageViews.reduce((sum, page) => sum + page.count, 0)} detail="Actividad reciente" />
+                  <Metric icon={CreditCard} label="Stripe" value={stripeMode} detail="No muestra claves privadas" />
+                  <Metric icon={Wallet} label="PayPal" value={paypalMode} detail="Metodo adicional" />
                 </div>
               </div>
             </section>
@@ -427,13 +431,13 @@ export default async function AdminPage() {
             </section>
 
             <section className="panel p-5 sm:p-6">
-              <SectionTitle title="Pagos" text="Historial de pagos y sesiones Stripe/transferencias." />
+              <SectionTitle title="Pagos" text="Historial de pagos Stripe, PayPal y transferencias." />
               <div className="mt-5 grid gap-3">
                 {payments.length === 0 ? <Empty text="Sin pagos todavia." /> : null}
                 {payments.map((payment) => (
                   <div key={payment.id} className="rounded-2xl border border-white/10 bg-black/35 p-4">
                     <p className="font-bold">{payment.user?.name ?? payment.userId ?? "Cliente"}</p>
-                    <p className="text-sm text-white/55">{formatDop(payment.amount)} / {payment.status} / {payment.stripeSessionId}</p>
+                    <p className="text-sm text-white/55">{formatDop(payment.amount)} / {payment.status} / {payment.method ?? inferPaymentMethod(payment.stripeSessionId)} / {payment.stripeSessionId}</p>
                   </div>
                 ))}
               </div>
@@ -583,6 +587,13 @@ function timeAgo(value: string) {
   const minutes = Math.floor(diff / 60_000);
   if (minutes < 60) return `${minutes} min`;
   return `${Math.floor(minutes / 60)} h`;
+}
+
+function inferPaymentMethod(sessionId?: string | null) {
+  if (sessionId?.startsWith("paypal-")) return "PAYPAL";
+  if (sessionId?.startsWith("transfer-")) return "TRANSFER";
+  if (sessionId?.startsWith("cs_")) return "STRIPE";
+  return "UNKNOWN";
 }
 
 function Empty({ text }: { text: string }) {

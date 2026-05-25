@@ -30,7 +30,7 @@ Plataforma musical premium tipo marketplace para beats, presets, sound kits, ser
 - Perfiles publicos en `/u/[username]`.
 - Dashboard de artista, productor, ingeniero y estudio.
 - Admin panel con ventas, ordenes, reservas, usuarios activos, productos, pagos, settings y notificaciones.
-- Checkout con Stripe o transferencia.
+- Checkout con Stripe, PayPal o transferencia.
 - Webhook de Stripe para marcar pagos, desbloquear descargas y enviar email.
 - Descargas privadas en `/descargas/[orderId]`.
 - Upload real de cover, preview MP3/WAV y archivos finales MP3/WAV/ZIP con UploadThing.
@@ -59,6 +59,11 @@ APPLE_CLIENT_SECRET=""
 STRIPE_SECRET_KEY=""
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=""
 STRIPE_WEBHOOK_SECRET=""
+
+PAYPAL_CLIENT_ID=""
+PAYPAL_CLIENT_SECRET=""
+PAYPAL_ENV="sandbox"
+PAYPAL_DOP_USD_RATE="60"
 
 SMTP_HOST=""
 SMTP_PORT="587"
@@ -119,6 +124,49 @@ Luego prueba con una tarjeta de test, por ejemplo:
 Cuando Stripe envie `checkout.session.completed`, el webhook marca el pago como `PAID`, actualiza la orden, desbloquea `/descargas/[orderId]` y envia el email de compra completada si SMTP esta configurado.
 
 Si estas probando local y olvidas correr Stripe CLI, `/compras?success=1&session_id=...` hace una sincronizacion segura: consulta la sesion con `STRIPE_SECRET_KEY`, confirma que `payment_status` sea `paid`, valida que `metadata.userId` coincida con el usuario logueado y actualiza `Order`/`Payment` sin exponer el `fileUrl`.
+
+### Cambiar Stripe a modo real/live
+
+No hay claves Stripe hardcodeadas en el codigo. Para produccion configura estas variables en Vercel con claves reales:
+
+```bash
+STRIPE_SECRET_KEY="sk_live_..."
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_live_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+NEXT_PUBLIC_APP_URL="https://ellbopa-studio.vercel.app"
+NEXT_PUBLIC_SITE_URL="https://ellbopa-studio.vercel.app"
+```
+
+En Stripe Dashboard crea un endpoint live apuntando a:
+
+```txt
+https://ellbopa-studio.vercel.app/api/stripe/webhook
+```
+
+Eventos recomendados:
+
+```txt
+checkout.session.completed
+payment_intent.succeeded
+charge.refunded
+```
+
+El admin muestra si `STRIPE_SECRET_KEY` parece `TEST`, `LIVE` o `NO CONFIG` sin revelar la clave.
+
+## PayPal
+
+PayPal Checkout esta integrado como metodo adicional. Usa el mismo modelo `Order`/`Payment`, desbloquea las descargas protegidas, procesa comision 20% y suma wallet 80%.
+
+Variables:
+
+```bash
+PAYPAL_CLIENT_ID=""
+PAYPAL_CLIENT_SECRET=""
+PAYPAL_ENV="sandbox" # sandbox o live
+PAYPAL_DOP_USD_RATE="60"
+```
+
+Nota: muchas cuentas PayPal no procesan DOP directamente. El checkout PayPal convierte RD$ a USD usando `PAYPAL_DOP_USD_RATE`. Ajusta la tasa antes de abrir ventas reales.
 
 ## UploadThing
 
@@ -258,15 +306,33 @@ Si `docker` no existe en tu terminal, instala Docker Desktop o PostgreSQL nativo
 
 Si PostgreSQL local no esta activo, la app sigue funcionando con fallback local para productos, usuarios demo, comunidad, ordenes y pagos.
 
-## Usuarios demo
+## Limpieza de beta
 
-- Admin: `admin@ellbopastudio.com` / `admin12345`
-- Cliente: `cliente@demo.com` / `cliente12345`
+Antes de lanzar una beta publica puedes revisar conteos y preparar limpieza sin borrar nada:
+
+```bash
+npm run clean:beta
+```
+
+Para ejecutar la limpieza real se exige confirmacion explicita:
+
+```bash
+npm run clean:beta -- --confirm
+```
+
+El script crea backup en `backups/`, conserva `ellbopamusic@gmail.com` como admin y borra productos, ordenes, pagos, wallets, payouts, posts, favoritos, follows, reviews, reservas y vistas de prueba. No borra usuarios normales salvo que ejecutes:
+
+```bash
+npm run clean:beta -- --confirm --include-non-admin-users
+```
+
+No ejecutes la limpieza real sin confirmar que ya no necesitas esos datos.
 
 ## Produccion
 
 - Configura PostgreSQL real y ejecuta `npx prisma migrate dev` o migraciones equivalentes.
-- Configura Stripe live keys y `STRIPE_WEBHOOK_SECRET`.
+- Configura Stripe live keys, `STRIPE_WEBHOOK_SECRET` y webhook live.
+- Configura PayPal live si quieres aceptar PayPal en produccion.
 - Configura SMTP real para OTP, recuperacion, recibos y compras.
 - Configura `UPLOADTHING_TOKEN` para subir archivos grandes fuera del servidor.
 - Actualiza `NEXTAUTH_URL`, `AUTH_URL` y `NEXT_PUBLIC_SITE_URL` al dominio final.
