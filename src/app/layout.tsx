@@ -26,6 +26,7 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const config = await getSiteConfig();
+  const primary = config.primaryColor || "#ff1f1f";
 
   return (
     <html lang="es" data-scroll-behavior="smooth" suppressHydrationWarning>
@@ -33,8 +34,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         suppressHydrationWarning
         style={
           {
-            "--cms-red": config.primaryColor,
-            "--cms-gold": config.goldColor
+            "--cms-red": primary,
+            "--cms-gold": config.goldColor,
+            "--brand-primary": primary,
+            "--brand-primary-hover": `color-mix(in srgb, ${primary} 82%, white)`,
+            "--brand-glow": `color-mix(in srgb, ${primary} 36%, transparent)`,
+            "--brand-border": `color-mix(in srgb, ${primary} 42%, transparent)`
           } as React.CSSProperties
         }
       >

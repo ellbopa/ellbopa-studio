@@ -19,6 +19,7 @@ import {
   Music2,
   Search,
   Settings,
+  Palette,
   ShoppingBag,
   SlidersHorizontal,
   Star,
@@ -61,6 +62,7 @@ const navItems = [
   ["Collaborations", "#messages", WandSparkles],
   ["Bookings", "#bookings", CalendarDays],
   ["Payouts", "#payouts", Wallet],
+  ["Apariencia", "/admin/appearance", Palette],
   ["Settings", "#settings", Settings]
 ] as const;
 

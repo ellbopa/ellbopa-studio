@@ -4,6 +4,10 @@
 
 :root {
   color-scheme: dark;
+  --brand-primary: #ff1f1f;
+  --brand-primary-hover: #ff4b4b;
+  --brand-glow: rgba(255, 31, 31, 0.36);
+  --brand-border: rgba(255, 31, 31, 0.42);
 }
 
 * {
@@ -110,9 +114,9 @@ textarea {
 }
 
 .control:focus {
-  border-color: rgba(248, 113, 113, 0.55);
+  border-color: var(--brand-border);
   background: rgba(0, 0, 0, 0.72);
-  box-shadow: 0 0 0 4px rgba(229, 9, 20, 0.13);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-primary) 14%, transparent);
 }
 
 .beat-tile {
@@ -135,15 +139,15 @@ textarea {
   position: absolute;
   inset: -1px;
   pointer-events: none;
-  background: linear-gradient(115deg, transparent 0%, rgba(229, 9, 20, 0.18) 45%, rgba(217, 164, 65, 0.12) 55%, transparent 100%);
+  background: linear-gradient(115deg, transparent 0%, color-mix(in srgb, var(--brand-primary) 18%, transparent) 45%, rgba(217, 164, 65, 0.12) 55%, transparent 100%);
   opacity: 0;
   transition: opacity 240ms ease;
 }
 
 .premium-hover:hover {
   transform: translateY(-5px);
-  border-color: rgba(229, 9, 20, 0.38);
-  box-shadow: 0 28px 90px rgba(229, 9, 20, 0.13), 0 24px 80px rgba(0, 0, 0, 0.5);
+  border-color: var(--brand-border);
+  box-shadow: 0 28px 90px color-mix(in srgb, var(--brand-primary) 13%, transparent), 0 24px 80px rgba(0, 0, 0, 0.5);
 }
 
 .premium-hover:hover::before {
@@ -151,7 +155,7 @@ textarea {
 }
 
 .glow-button {
-  box-shadow: 0 0 22px color-mix(in srgb, var(--cms-red, #e50914) 36%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  box-shadow: 0 0 22px var(--brand-glow), inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
 .premium-action {
@@ -245,9 +249,36 @@ textarea {
 }
 
 .wave-bar-active {
-  background: linear-gradient(180deg, var(--cms-gold, #d9a441), var(--cms-red, #e50914));
-  box-shadow: 0 0 18px rgba(229, 9, 20, 0.35);
+  background: linear-gradient(180deg, var(--cms-gold, #d9a441), var(--brand-primary));
+  box-shadow: 0 0 18px var(--brand-glow);
   animation: wavePulse 1.25s ease-in-out infinite;
+}
+
+.bg-studio-red {
+  background-color: var(--brand-primary) !important;
+}
+
+.text-studio-red {
+  color: var(--brand-primary) !important;
+}
+
+.border-studio-red,
+.border-studio-red\/40 {
+  border-color: var(--brand-border) !important;
+}
+
+.hover\:border-studio-red:hover,
+.hover\:border-studio-red\/40:hover,
+.hover\:border-studio-red\/55:hover {
+  border-color: var(--brand-border) !important;
+}
+
+.hover\:text-studio-red:hover {
+  color: var(--brand-primary-hover) !important;
+}
+
+.accent-studio-red {
+  accent-color: var(--brand-primary) !important;
 }
 
 .artist-card:nth-child(2) {
