@@ -21,6 +21,7 @@ const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
 
 async function readActivity() {
   noStore();
+  if (process.env.NODE_ENV === "production") return [];
   try {
     const raw = await fs.readFile(activityPath, "utf8");
     return JSON.parse(raw) as VisitorActivity[];
@@ -64,6 +65,15 @@ export async function recordActivity(input: Omit<VisitorActivity, "firstSeen" | 
         console.error("[activity] database page view failed", error);
       }
     }
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    const now = new Date().toISOString();
+    return {
+      ...input,
+      firstSeen: now,
+      lastSeen: now
+    };
   }
 
   const now = new Date().toISOString();
