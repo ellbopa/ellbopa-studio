@@ -37,6 +37,7 @@ import { getActivity } from "@/lib/activity";
 import { getNotifications } from "@/lib/notifications";
 import { ProductUploadForm } from "@/components/product-upload-form";
 import { PLATFORM_FEE_PERCENT } from "@/lib/wallet";
+import { getPayPalStatusLabel } from "@/lib/paypal";
 
 export const metadata = { title: "Studio OS | Admin" };
 
@@ -49,6 +50,7 @@ const navItems = [
   ["Sound Kits", "#tracks", Disc3],
   ["Servicios", "#services", Star],
   ["Orders", "#orders", CreditCard],
+  ["Usuarios", "/admin/users", Users],
   ["Customers", "#customers", Users],
   ["Analytics", "#analytics", BarChart3],
   ["Notifications", "#notifications", Bell],
@@ -95,7 +97,7 @@ export default async function AdminPage() {
     safeAdminQuery("payouts", () => prisma.payoutRequest.findMany({ include: { user: true }, orderBy: { createdAt: "desc" }, take: 50 }), []),
     safeAdminQuery("wallets", () => prisma.wallet.findMany({ include: { user: true }, orderBy: { updatedAt: "desc" }, take: 50 }), []),
     safeAdminQuery("totalUsers", () => prisma.user.count(), 0),
-    safeAdminQuery("totalProducts", () => prisma.product.count(), 0),
+    safeAdminQuery("totalProducts", () => prisma.product.count({ where: { active: true } }), 0),
     safeAdminQuery("totalOrders", () => prisma.order.count(), 0),
     safeAdminQuery("totalPayments", () => prisma.payment.count(), 0),
     safeAdminQuery("totalPageViews", () => prisma.pageView.count(), 0),
@@ -115,7 +117,7 @@ export default async function AdminPage() {
   const storageItems = getStorageItems(products);
   const conversion = orders.length ? Math.round((paidPayments.length / orders.length) * 100) : 0;
   const uploadConfigured = Boolean(process.env.UPLOADTHING_TOKEN || (process.env.UPLOADTHING_SECRET && process.env.UPLOADTHING_APP_ID));
-  const paypalMode = process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET ? (process.env.PAYPAL_ENV === "live" ? "LIVE" : "SANDBOX") : "OFF";
+  const paypalMode = getPayPalStatusLabel();
   const stripeMode = getStripeMode();
   const databaseMode = getDatabaseMode();
   const platformFees = orders.reduce((sum, order) => sum + Number(order.platformFeeAmount || 0), 0);

@@ -62,7 +62,9 @@ STRIPE_WEBHOOK_SECRET=""
 
 PAYPAL_CLIENT_ID=""
 PAYPAL_CLIENT_SECRET=""
+PAYPAL_MODE="sandbox"
 PAYPAL_ENV="sandbox"
+PAYPAL_WEBHOOK_ID=""
 PAYPAL_DOP_USD_RATE="60"
 
 SMTP_HOST=""
@@ -162,9 +164,16 @@ Variables:
 ```bash
 PAYPAL_CLIENT_ID=""
 PAYPAL_CLIENT_SECRET=""
-PAYPAL_ENV="sandbox" # sandbox o live
+PAYPAL_MODE="sandbox" # sandbox o live
+PAYPAL_ENV="sandbox" # legacy fallback; PAYPAL_MODE tiene prioridad
+PAYPAL_WEBHOOK_ID=""
 PAYPAL_DOP_USD_RATE="60"
 ```
+
+`PAYPAL_MODE=sandbox` usa `https://api-m.sandbox.paypal.com`.
+`PAYPAL_MODE=live` usa `https://api-m.paypal.com`.
+
+No pongas `PAYPAL_MODE=live` hasta tener `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` y `PAYPAL_WEBHOOK_ID` live reales. El admin muestra claramente `PayPal: SANDBOX`, `PayPal: LIVE` u `OFF` sin revelar claves.
 
 Nota: muchas cuentas PayPal no procesan DOP directamente. El checkout PayPal convierte RD$ a USD usando `PAYPAL_DOP_USD_RATE`. Ajusta la tasa antes de abrir ventas reales.
 

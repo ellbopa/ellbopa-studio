@@ -18,21 +18,28 @@ type PayPalCaptureResult = {
   reason?: string;
 };
 
-const PAYPAL_API = process.env.PAYPAL_ENV === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
-
 export function hasPayPalConfig() {
   return Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);
 }
 
 export function getPayPalMode() {
-  return process.env.PAYPAL_ENV === "live" ? "live" : "sandbox";
+  return (process.env.PAYPAL_MODE || process.env.PAYPAL_ENV) === "live" ? "live" : "sandbox";
+}
+
+export function getPayPalStatusLabel() {
+  if (!hasPayPalConfig()) return "OFF";
+  return getPayPalMode() === "live" ? "LIVE" : "SANDBOX";
+}
+
+function getPayPalApiBase() {
+  return getPayPalMode() === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
 }
 
 export async function createPayPalCheckout(input: PayPalOrderInput) {
   if (!hasPayPalConfig()) throw new Error("PayPal is not configured");
 
   const token = await getPayPalAccessToken();
-  const response = await fetch(`${PAYPAL_API}/v2/checkout/orders`, {
+  const response = await fetch(`${getPayPalApiBase()}/v2/checkout/orders`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -92,7 +99,7 @@ export async function capturePayPalCheckout(paypalOrderId: string, userId: strin
   if (existingPayment.status === "PAID") return { ok: true, orderId: existingPayment.orderId, bookingId: existingPayment.bookingId };
 
   const token = await getPayPalAccessToken();
-  const response = await fetch(`${PAYPAL_API}/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}/capture`, {
+  const response = await fetch(`${getPayPalApiBase()}/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}/capture`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -150,7 +157,7 @@ export async function capturePayPalCheckout(paypalOrderId: string, userId: strin
 
 async function getPayPalAccessToken() {
   const credentials = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString("base64");
-  const response = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
+  const response = await fetch(`${getPayPalApiBase()}/v1/oauth2/token`, {
     method: "POST",
     headers: {
       Authorization: `Basic ${credentials}`,
