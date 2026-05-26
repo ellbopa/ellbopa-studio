@@ -199,9 +199,11 @@ export const fallbackProducts = [
 ];
 
 export async function getProducts(type?: ProductType) {
+  const production = process.env.NODE_ENV === "production";
   const localProducts = await getLocalProducts(type);
 
   if (!(await canUseDatabase())) {
+    if (production) return [];
     return dedupeProducts([...localProducts, ...fallbackProducts.filter((product) => !type || product.type === type)]);
   }
 
@@ -210,8 +212,9 @@ export async function getProducts(type?: ProductType) {
       where: { active: true, ...(type ? { type } : {}) },
       orderBy: { createdAt: "desc" }
     });
-    return dedupeProducts([...localProducts, ...dbProducts]);
+    return production ? dbProducts : dedupeProducts([...localProducts, ...dbProducts]);
   } catch {
+    if (production) return [];
     return dedupeProducts([...localProducts, ...fallbackProducts.filter((product) => !type || product.type === type)]);
   }
 }
