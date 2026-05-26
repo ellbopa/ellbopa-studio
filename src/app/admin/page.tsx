@@ -87,19 +87,19 @@ export default async function AdminPage() {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
   [orders, bookings, products, payments, users, payoutRequests, wallets, totalUsers, totalProducts, totalOrders, totalPayments, totalPageViews, usersToday] = await Promise.all([
-    prisma.order.findMany({ include: { user: true, product: true }, orderBy: { createdAt: "desc" }, take: 250 }),
-    prisma.booking.findMany({ include: { user: true }, orderBy: { createdAt: "desc" }, take: 250 }),
-    prisma.product.findMany({ orderBy: { createdAt: "desc" }, include: { owner: true, _count: { select: { orders: true, favorites: true, views: true } } }, take: 250 }),
-    prisma.payment.findMany({ include: { user: true, order: { include: { product: true } } }, orderBy: { createdAt: "desc" }, take: 250 }),
-    prisma.user.findMany({ orderBy: { createdAt: "desc" }, include: { _count: { select: { orders: true, products: true, payments: true, pageViews: true } } }, take: 100 }),
-    prisma.payoutRequest.findMany({ include: { user: true }, orderBy: { createdAt: "desc" }, take: 50 }),
-    prisma.wallet.findMany({ include: { user: true }, orderBy: { updatedAt: "desc" }, take: 50 }),
-    prisma.user.count(),
-    prisma.product.count(),
-    prisma.order.count(),
-    prisma.payment.count(),
-    prisma.pageView.count(),
-    prisma.user.count({ where: { createdAt: { gte: todayStart } } })
+    safeAdminQuery("orders", () => prisma.order.findMany({ include: { user: true, product: true }, orderBy: { createdAt: "desc" }, take: 250 }), []),
+    safeAdminQuery("bookings", () => prisma.booking.findMany({ include: { user: true }, orderBy: { createdAt: "desc" }, take: 250 }), []),
+    safeAdminQuery("products", () => prisma.product.findMany({ orderBy: { createdAt: "desc" }, include: { owner: true, _count: { select: { orders: true, favorites: true, views: true } } }, take: 250 }), []),
+    safeAdminQuery("payments", () => prisma.payment.findMany({ include: { user: true, order: { include: { product: true } } }, orderBy: { createdAt: "desc" }, take: 250 }), []),
+    safeAdminQuery("users", () => prisma.user.findMany({ orderBy: { createdAt: "desc" }, include: { _count: { select: { orders: true, products: true, payments: true, pageViews: true } } }, take: 100 }), []),
+    safeAdminQuery("payouts", () => prisma.payoutRequest.findMany({ include: { user: true }, orderBy: { createdAt: "desc" }, take: 50 }), []),
+    safeAdminQuery("wallets", () => prisma.wallet.findMany({ include: { user: true }, orderBy: { updatedAt: "desc" }, take: 50 }), []),
+    safeAdminQuery("totalUsers", () => prisma.user.count(), 0),
+    safeAdminQuery("totalProducts", () => prisma.product.count(), 0),
+    safeAdminQuery("totalOrders", () => prisma.order.count(), 0),
+    safeAdminQuery("totalPayments", () => prisma.payment.count(), 0),
+    safeAdminQuery("totalPageViews", () => prisma.pageView.count(), 0),
+    safeAdminQuery("usersToday", () => prisma.user.count({ where: { createdAt: { gte: todayStart } } }), 0)
   ]);
 
   const paidPayments = payments.filter((payment) => payment.status === "PAID");
@@ -690,6 +690,15 @@ function inferPaymentMethod(sessionId?: string | null) {
   if (sessionId?.startsWith("transfer-")) return "TRANSFER";
   if (sessionId?.startsWith("cs_")) return "STRIPE";
   return "UNKNOWN";
+}
+
+async function safeAdminQuery<T>(label: string, query: () => Promise<T>, fallback: T) {
+  try {
+    return await query();
+  } catch (error) {
+    console.error(`[admin] ${label} query failed`, error);
+    return fallback;
+  }
 }
 
 function Empty({ text }: { text: string }) {

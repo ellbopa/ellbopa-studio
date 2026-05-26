@@ -32,32 +32,38 @@ async function readActivity() {
 export async function recordActivity(input: Omit<VisitorActivity, "firstSeen" | "lastSeen">) {
   noStore();
   if (await canUseDatabase()) {
-    const created = await prisma.pageView.create({
-      data: {
-        userId: input.userId || null,
-        visitorId: input.visitorId,
-        path: input.path || "/",
-        userAgent: input.userAgent || null,
-        email: input.email || null,
-        name: input.name || null,
-        role: input.role || null
-      }
-    });
-    const productId = productIdFromPath(input.path);
-    if (productId) {
-      await prisma.productView.create({
+    try {
+      const created = await prisma.pageView.create({
         data: {
-          productId,
           userId: input.userId || null,
-          path: input.path || "/"
+          visitorId: input.visitorId,
+          path: input.path || "/",
+          userAgent: input.userAgent || null,
+          email: input.email || null,
+          name: input.name || null,
+          role: input.role || null
         }
-      }).catch(() => null);
+      });
+      const productId = productIdFromPath(input.path);
+      if (productId) {
+        await prisma.productView.create({
+          data: {
+            productId,
+            userId: input.userId || null,
+            path: input.path || "/"
+          }
+        }).catch(() => null);
+      }
+      return {
+        ...input,
+        firstSeen: created.createdAt.toISOString(),
+        lastSeen: created.createdAt.toISOString()
+      };
+    } catch (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("[activity] database page view failed", error);
+      }
     }
-    return {
-      ...input,
-      firstSeen: created.createdAt.toISOString(),
-      lastSeen: created.createdAt.toISOString()
-    };
   }
 
   const now = new Date().toISOString();
@@ -88,48 +94,54 @@ function productIdFromPath(pathValue?: string | null) {
 export async function getActivity() {
   noStore();
   if (await canUseDatabase()) {
-    const now = Date.now();
-    const activeSince = new Date(now - ACTIVE_WINDOW_MS);
-    const [recentRows, activeRows] = await Promise.all([
-      prisma.pageView.findMany({ orderBy: { createdAt: "desc" }, take: 300 }),
-      prisma.pageView.findMany({ where: { createdAt: { gte: activeSince } }, orderBy: { createdAt: "desc" }, take: 500 })
-    ]);
-    const firstSeenByVisitor = new Map<string, string>();
-    for (const row of recentRows.slice().reverse()) {
-      if (!firstSeenByVisitor.has(row.visitorId)) firstSeenByVisitor.set(row.visitorId, row.createdAt.toISOString());
-    }
-    const activeMap = new Map<string, VisitorActivity>();
-    for (const row of activeRows) {
-      if (!activeMap.has(row.visitorId)) {
-        activeMap.set(row.visitorId, {
-          userId: row.userId,
-          visitorId: row.visitorId,
-          path: row.path,
-          userAgent: row.userAgent,
-          email: row.email,
-          name: row.name,
-          role: row.role,
-          firstSeen: firstSeenByVisitor.get(row.visitorId) || row.createdAt.toISOString(),
-          lastSeen: row.createdAt.toISOString()
-        });
+    try {
+      const now = Date.now();
+      const activeSince = new Date(now - ACTIVE_WINDOW_MS);
+      const [recentRows, activeRows] = await Promise.all([
+        prisma.pageView.findMany({ orderBy: { createdAt: "desc" }, take: 300 }),
+        prisma.pageView.findMany({ where: { createdAt: { gte: activeSince } }, orderBy: { createdAt: "desc" }, take: 500 })
+      ]);
+      const firstSeenByVisitor = new Map<string, string>();
+      for (const row of recentRows.slice().reverse()) {
+        if (!firstSeenByVisitor.has(row.visitorId)) firstSeenByVisitor.set(row.visitorId, row.createdAt.toISOString());
+      }
+      const activeMap = new Map<string, VisitorActivity>();
+      for (const row of activeRows) {
+        if (!activeMap.has(row.visitorId)) {
+          activeMap.set(row.visitorId, {
+            userId: row.userId,
+            visitorId: row.visitorId,
+            path: row.path,
+            userAgent: row.userAgent,
+            email: row.email,
+            name: row.name,
+            role: row.role,
+            firstSeen: firstSeenByVisitor.get(row.visitorId) || row.createdAt.toISOString(),
+            lastSeen: row.createdAt.toISOString()
+          });
+        }
+      }
+      const recent = recentRows.map((row) => ({
+        userId: row.userId,
+        visitorId: row.visitorId,
+        path: row.path,
+        userAgent: row.userAgent,
+        email: row.email,
+        name: row.name,
+        role: row.role,
+        firstSeen: firstSeenByVisitor.get(row.visitorId) || row.createdAt.toISOString(),
+        lastSeen: row.createdAt.toISOString()
+      }));
+      return {
+        active: Array.from(activeMap.values()),
+        recent,
+        activeCount: activeMap.size
+      };
+    } catch (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("[activity] database activity read failed", error);
       }
     }
-    const recent = recentRows.map((row) => ({
-      userId: row.userId,
-      visitorId: row.visitorId,
-      path: row.path,
-      userAgent: row.userAgent,
-      email: row.email,
-      name: row.name,
-      role: row.role,
-      firstSeen: firstSeenByVisitor.get(row.visitorId) || row.createdAt.toISOString(),
-      lastSeen: row.createdAt.toISOString()
-    }));
-    return {
-      active: Array.from(activeMap.values()),
-      recent,
-      activeCount: activeMap.size
-    };
   }
 
   const activity = await readActivity();
