@@ -3,7 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getLocalBookings, getLocalOrders, updateLocalBooking, updateLocalOrder } from "@/lib/local-workflow";
-import { isConfiguredAdminEmail } from "@/lib/config";
+import { isAdminUser } from "@/lib/admin";
 import { formatDop } from "@/lib/format";
 import { sendPaymentEmail } from "@/lib/email";
 import { processOrderCommission } from "@/lib/wallet";
@@ -17,7 +17,7 @@ const statusSchema = z.object({
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN" && !isConfiguredAdminEmail(session?.user?.email)) {
+  if (!isAdminUser(session?.user)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

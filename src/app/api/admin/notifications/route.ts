@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { isConfiguredAdminEmail } from "@/lib/config";
+import { isAdminUser } from "@/lib/admin";
 import { createNotification, setNotificationActive, type NotificationAudience } from "@/lib/notifications";
 
 const allowedAudiences = new Set(["ALL", "ARTIST", "PRODUCER", "ENGINEER", "STUDIO"]);
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN" && !isConfiguredAdminEmail(session?.user?.email)) {
+  if (!isAdminUser(session?.user)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hasAppleConfig, hasFacebookConfig, hasGoogleConfig, isConfiguredAdminEmail } from "@/lib/config";
+import { isOwnerAdminEmail } from "@/lib/admin";
 import { normalizeRole } from "@/lib/roles";
 import { findLocalUserByEmail } from "@/lib/local-users";
 
@@ -21,6 +22,7 @@ function isAdminEmail(email?: string | null) {
 
 function demoUser(email: string, password: string) {
   if (process.env.NODE_ENV === "production") return null;
+  if (process.env.ENABLE_DEMO_USERS !== "true") return null;
 
   if (email === "admin@ellbopastudio.com" && password === "admin12345") {
     return {
@@ -208,7 +210,8 @@ export const authConfig = {
           });
           if (dbUser) {
             token.sub = dbUser.id;
-            token.role = normalizeRole(dbUser.role);
+            const dbRole = normalizeRole(dbUser.role);
+            token.role = dbRole === "ADMIN" && !isOwnerAdminEmail(token.email) ? "ARTIST" : dbRole;
             token.phone = dbUser.phone;
             token.verified = dbUser.verified;
             token.onboardingCompleted = dbUser.onboardingCompleted;
@@ -229,6 +232,7 @@ export const authConfig = {
         }
       }
       if (token.email && isAdminEmail(token.email)) token.role = "ADMIN";
+      if (token.role === "ADMIN" && !isOwnerAdminEmail(token.email)) token.role = "ARTIST";
       return token;
     },
     session({ session, token }) {

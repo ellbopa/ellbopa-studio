@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { AlertCircle, CheckCircle2, FileArchive, ImageIcon, Loader2, Music2 } from "lucide-react";
 import { useUploadThing } from "@/lib/uploadthing";
+import { musicalKeyOptions } from "@/lib/music-keys";
 
 type UploadedAsset = {
   url: string;
@@ -176,11 +177,21 @@ export function ProductUploadForm({ uploadConfigured, returnTo = "producer" }: P
             <option value="BEAT">Beat / Instrumental</option>
             <option value="PRESET">Preset vocal</option>
             <option value="SOUND_KIT">Sound Kit</option>
+            <option value="SERVICE">Servicio</option>
           </select>
         </label>
         <Input name="genre" label="Genero" placeholder="Trap, R&B, Dembow" />
         <Input name="bpm" label="BPM" type="number" />
-        <Input name="musicalKey" label="Key" placeholder="Fm, C#m..." />
+        <label className="field">
+          Tono / Key
+          <select name="musicalKey" className="control">
+            {musicalKeyOptions.map((option) => (
+              <option key={option.value || "empty"} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <Input name="mood" label="Mood" placeholder="Dark, luxury, street" />
         <Input name="price" label="Basic RD$" type="number" required />
         <Input name="premiumPrice" label="Premium RD$" type="number" />

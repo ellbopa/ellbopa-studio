@@ -30,7 +30,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   const [profile, products, config] = await Promise.all([getPublicProfile(username), getProducts(), getSiteConfig()]);
   if (!profile) notFound();
 
-  const catalog = products.slice(0, 8);
+  const catalog = products.filter((product) => (product as { ownerId?: string | null }).ownerId === profile.id).slice(0, 12);
 
   return (
     <main className="pb-20">
@@ -53,6 +53,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
               <p className="mt-4 max-w-3xl text-lg leading-8 text-white/68">{profile.bio}</p>
               <div className="mt-5 flex flex-wrap gap-3 text-sm text-white/58">
                 <span className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2"><MapPin className="h-4 w-4 text-studio-gold" /> {profile.location}</span>
+                {profile.genres ? <span className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2"><Music2 className="h-4 w-4 text-studio-gold" /> {profile.genres}</span> : null}
                 <span className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2"><Users className="h-4 w-4 text-studio-gold" /> {profile.stats.followers} seguidores</span>
                 <span className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2"><Music2 className="h-4 w-4 text-studio-gold" /> {profile.stats.products} productos</span>
                 <span className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2"><Star className="h-4 w-4 text-studio-gold" /> {profile.stats.reviews} reviews</span>
@@ -90,7 +91,9 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                 ["YouTube", profile.youtube],
                 ["Spotify", profile.spotify],
                 ["TikTok", profile.tiktok],
-                ["Website", profile.website]
+                ["BeatStars", profile.beatstars],
+                ["Website", profile.website],
+                ["Email", profile.email ? `mailto:${profile.email}` : null]
               ].filter(([, href]) => href).map(([label, href]) => (
                 <a key={label} href={href || "#"} target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white/70 hover:text-white">
                   {label}<LinkIcon className="h-4 w-4 text-studio-gold" />

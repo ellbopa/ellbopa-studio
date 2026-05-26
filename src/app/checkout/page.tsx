@@ -97,7 +97,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
                   Add to Cart
                 </Link>
                 <Link href={`/login?next=checkout&productId=${encodeURIComponent(product.id)}&license=${selectedLicense.key}`} className="rounded-md bg-blue-600 px-7 py-4 text-center font-black text-white shadow-[0_0_28px_rgba(37,99,235,.28)] transition hover:bg-blue-500">
-                  Buy now
+                  Continuar
                 </Link>
               </div>
             ) : (
@@ -120,16 +120,8 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
                   <input type="hidden" name="productId" value={product.id} />
                   <input type="hidden" name="mode" value="full" />
                   <input type="hidden" name="license" value={selectedLicense.key} />
-                  <button name="paymentMethod" value="stripe" className="rounded-md bg-blue-600 px-7 py-4 font-black text-white shadow-[0_0_28px_rgba(37,99,235,.28)] transition hover:bg-blue-500">
-                    Buy now
-                  </button>
-                </form>
-                <form action="/api/checkout" method="POST" className="contents">
-                  <input type="hidden" name="productId" value={product.id} />
-                  <input type="hidden" name="mode" value="full" />
-                  <input type="hidden" name="license" value={selectedLicense.key} />
                   <button name="paymentMethod" value="paypal" className="rounded-md border border-blue-400/45 bg-blue-500/10 px-7 py-4 font-black text-blue-100 transition hover:bg-blue-600 hover:text-white">
-                    PayPal
+                    Pagar con PayPal
                   </button>
                 </form>
               </div>
@@ -158,7 +150,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
         <h1 className="mt-3 font-display text-4xl font-black sm:text-6xl">{isInstrumental ? "Elige licencia del instrumental" : "Elige como quieres pagar"}</h1>
         <p className="mt-3 max-w-2xl text-white/58">
           {!isInstrumental
-            ? "Compra tu preset por tarjeta o deja la orden pendiente por transferencia. Los archivos se liberan cuando el pago este confirmado."
+            ? "Compra tu preset por PayPal o deja la orden pendiente por transferencia. Los archivos se liberan cuando el pago este confirmado."
             : "Selecciona la licencia del instrumental, revisa los terminos y completa tu compra como en una tienda profesional."}
         </p>
         {error === "missing-file" ? (
@@ -169,6 +161,11 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
         {error === "paypal-not-configured" ? (
           <div className="mt-5 rounded-lg border border-blue-400/25 bg-blue-500/10 p-4 text-sm font-bold text-blue-100">
             PayPal todavia no esta configurado. Agrega PAYPAL_CLIENT_ID y PAYPAL_CLIENT_SECRET para activar este metodo.
+          </div>
+        ) : null}
+        {error === "payment-method-disabled" ? (
+          <div className="mt-5 rounded-lg border border-studio-gold/25 bg-studio-gold/10 p-4 text-sm font-bold text-studio-gold">
+            Ese metodo de pago esta desactivado. Usa PayPal o transferencia.
           </div>
         ) : null}
       </div>
@@ -256,7 +253,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
               </p>
               <div className="mt-5 grid gap-3">
                 <Link href={`/login?next=checkout&productId=${encodeURIComponent(product.id)}${selectedLicense ? `&license=${selectedLicense.key}` : ""}`} className="flex w-full items-center gap-4 rounded-lg border border-studio-red/35 bg-studio-red px-5 py-4 text-left font-bold glow-button">
-                  <CreditCard size={20} /> Pagar con tarjeta
+                  <CreditCard size={20} /> Pagar con PayPal
                 </Link>
                 <Link href={`/login?next=checkout&productId=${encodeURIComponent(product.id)}${selectedLicense ? `&license=${selectedLicense.key}` : ""}`} className="flex w-full items-center gap-4 rounded-lg border border-studio-gold/35 bg-studio-gold/10 px-5 py-4 text-left font-bold text-studio-gold">
                   <Landmark size={20} /> Pagar por transferencia
@@ -279,19 +276,6 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
                   }}
                 />
               </div>
-              <form action="/api/checkout" method="POST">
-                <input type="hidden" name="productId" value={product.id} />
-                <input type="hidden" name="mode" value="full" />
-                {selectedLicense ? <input type="hidden" name="license" value={selectedLicense.key} /> : null}
-                <button name="paymentMethod" value="stripe" className="group flex w-full items-center gap-4 rounded-lg border border-studio-red/35 bg-studio-red px-5 py-5 text-left shadow-glow transition hover:-translate-y-0.5">
-                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-black/25"><CreditCard size={22} /></span>
-                  <span>
-                    <span className="block font-display text-xl font-black">Pagar con tarjeta</span>
-                    <span className="mt-1 block text-sm text-white/70">Checkout seguro con Stripe en modo prueba.</span>
-                  </span>
-                </button>
-              </form>
-
               <form action="/api/checkout" method="POST">
                 <input type="hidden" name="productId" value={product.id} />
                 <input type="hidden" name="mode" value="full" />

@@ -1,3 +1,5 @@
+import { isOwnerAdminEmail } from "@/lib/admin";
+
 export function isPlaceholder(value?: string | null) {
   if (!value) return true;
   return value.includes("change_me") || value.includes("change-me") || value.includes("missing");
@@ -20,10 +22,5 @@ export function hasAppleConfig() {
 }
 
 export function isConfiguredAdminEmail(email?: string | null) {
-  if (!email) return false;
-  return (process.env.ADMIN_EMAILS || "admin@ellbopastudio.com")
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean)
-    .includes(email.toLowerCase());
+  return isOwnerAdminEmail(email);
 }

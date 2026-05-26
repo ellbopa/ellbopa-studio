@@ -3,7 +3,7 @@ import { PayoutStatus, WalletTransactionType } from "@prisma/client";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isConfiguredAdminEmail } from "@/lib/config";
+import { isAdminUser } from "@/lib/admin";
 import { getOrCreateWallet } from "@/lib/wallet";
 
 const createSchema = z.object({
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN" && !isConfiguredAdminEmail(session?.user?.email)) {
+  if (!isAdminUser(session?.user)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -85,7 +85,7 @@ export async function PATCH(request: Request) {
 
 export async function PUT(request: Request) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN" && !isConfiguredAdminEmail(session?.user?.email)) {
+  if (!isAdminUser(session?.user)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const formData = await request.formData();

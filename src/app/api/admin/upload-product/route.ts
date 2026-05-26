@@ -3,18 +3,19 @@ import { ProductType } from "@prisma/client";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { saveLocalProduct } from "@/lib/local-products";
-import { isConfiguredAdminEmail } from "@/lib/config";
+import { isAdminUser } from "@/lib/admin";
 import { canUploadProducts } from "@/lib/roles";
 import { getClientIp, isRateLimited } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { getLicenseOptions } from "@/lib/licensing";
+import { normalizeMusicalKey } from "@/lib/music-keys";
 
 const uploadSchema = z.object({
-  type: z.enum(["BEAT", "PRESET", "SOUND_KIT"]),
+  type: z.enum(["BEAT", "PRESET", "SOUND_KIT", "SERVICE"]),
   title: z.string().trim().min(2).max(120),
   genre: z.string().trim().max(80).optional(),
   bpm: z.coerce.number().int().min(0).max(300).optional(),
-  musicalKey: z.string().trim().max(20).optional(),
+  musicalKey: z.string().trim().max(80).optional(),
   mood: z.string().trim().max(80).optional(),
   description: z.string().trim().min(8).max(1200),
   price: z.coerce.number().int().min(0),
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
   }
 
   const session = await auth();
-  if (!canUploadProducts(session?.user?.role) && !isConfiguredAdminEmail(session?.user?.email)) {
+  if (!session?.user?.id || (!canUploadProducts(session.user.role) && !isAdminUser(session.user))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -65,6 +66,7 @@ export async function POST(request: Request) {
   if (validationError) return NextResponse.redirect(new URL(`/dashboard/producer/upload?error=${validationError}`, request.url));
 
   const { title, type } = parsed.data;
+  const musicalKey = normalizeMusicalKey(parsed.data.musicalKey);
   const id = `${slugify(title)}-${Date.now()}`;
   const imageUrl = parsed.data.imageUrl || defaultCoverFor(type);
   const audioUrl = parsed.data.audioUrl || null;
@@ -76,7 +78,7 @@ export async function POST(request: Request) {
     type: type as ProductType,
     genre: parsed.data.genre ?? "",
     bpm: parsed.data.bpm || null,
-    musicalKey: parsed.data.musicalKey ?? "",
+    musicalKey,
     mood: parsed.data.mood ?? "",
     description: parsed.data.description,
     price: parsed.data.price,
@@ -99,7 +101,7 @@ export async function POST(request: Request) {
         type: type as ProductType,
         genre: parsed.data.genre ?? "",
         bpm: parsed.data.bpm || null,
-        musicalKey: parsed.data.musicalKey ?? "",
+        musicalKey,
         mood: parsed.data.mood ?? "",
         description: parsed.data.description,
         price: parsed.data.price,
@@ -145,7 +147,7 @@ export async function POST(request: Request) {
 }
 
 function validateUploadedAssets(data: z.infer<typeof uploadSchema>) {
-  if (!data.fileUrl) return "missing-file";
+  if (data.type !== "SERVICE" && !data.fileUrl) return "missing-file";
   if (data.imageUrl && !isAllowedAsset(data.imageUrl, data.imageName, ["jpg", "jpeg", "png", "webp"])) return "invalid-cover";
   if (data.audioUrl && !isAllowedAsset(data.audioUrl, data.audioName, ["mp3", "wav"])) return "invalid-preview";
   if (data.fileUrl && !isAllowedAsset(data.fileUrl, data.fileName, ["mp3", "wav", "zip"])) return "invalid-file";
@@ -169,5 +171,5 @@ function defaultCoverFor(type: string) {
 function getRedirectPath(returnTo: string | undefined, role?: string | null) {
   if (returnTo === "admin" || role === "ADMIN") return "/admin?uploaded=1";
   if (returnTo === "engineer" || role === "ENGINEER") return "/dashboard/engineer?uploaded=1";
-  return "/dashboard/producer?uploaded=1";
+  return "/dashboard/producer/products?uploaded=1";
 }

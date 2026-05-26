@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { auth } from "@/lib/auth";
-import { isConfiguredAdminEmail } from "@/lib/config";
+import { isAdminUser } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { formatDop } from "@/lib/format";
 
@@ -31,7 +31,7 @@ const quickLinks = [
 export default async function AdminTestingPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
-  if (session.user.role !== "ADMIN" && !isConfiguredAdminEmail(session.user.email)) redirect("/");
+  if (!isAdminUser(session.user)) redirect("/");
 
   const data = await loadTestingData();
   const checklist = buildChecklist(data);

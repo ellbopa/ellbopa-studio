@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { ProductType } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isConfiguredAdminEmail } from "@/lib/config";
+import { isAdminUser } from "@/lib/admin";
+import { normalizeMusicalKey } from "@/lib/music-keys";
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN" && !isConfiguredAdminEmail(session?.user?.email)) {
+  if (!session?.user?.id || !isAdminUser(session.user)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -19,13 +20,14 @@ export async function POST(request: Request) {
         type: String(formData.get("type")) as ProductType,
         genre: String(formData.get("genre") ?? ""),
         bpm: Number(formData.get("bpm") || 0) || null,
-        musicalKey: String(formData.get("musicalKey") ?? ""),
+        musicalKey: normalizeMusicalKey(String(formData.get("musicalKey") ?? "")),
         mood: String(formData.get("mood") ?? ""),
         description: String(formData.get("description")),
         price: Number(formData.get("price")),
         audioUrl: String(formData.get("audioUrl") ?? ""),
         imageUrl: String(formData.get("imageUrl") ?? "/images/beat-cover.svg"),
-        fileUrl: String(formData.get("fileUrl") ?? "")
+        fileUrl: String(formData.get("fileUrl") ?? ""),
+        ownerId: session.user.id
       }
     });
   } catch (error) {

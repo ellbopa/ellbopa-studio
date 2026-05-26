@@ -3,6 +3,7 @@ import { getProducts } from "@/lib/products";
 import { canUseDatabase } from "@/lib/db-availability";
 
 export type PublicProfile = {
+  id: string;
   username: string;
   name: string;
   role: string;
@@ -15,6 +16,9 @@ export type PublicProfile = {
   spotify?: string | null;
   tiktok?: string | null;
   website?: string | null;
+  beatstars?: string | null;
+  genres?: string | null;
+  email?: string | null;
   verified?: boolean;
   stats: { products: number; followers: number; reviews: number };
 };
@@ -41,18 +45,22 @@ export async function getPublicProfile(username: string): Promise<PublicProfile 
     const studio = user.studioProfile;
     const artist = user.artistProfile;
     return {
+      id: user.id,
       username: user.username || user.id,
       name: producer?.artistName || engineer?.displayName || studio?.studioName || artist?.artistName || user.name || "Ellbopa User",
       role: user.role,
       bio: producer?.bio || engineer?.bio || studio?.bio || artist?.bio || "Perfil musical en Ellbopa Music.",
       location: producer?.location || engineer?.location || studio?.location || artist?.location || "Santo Domingo, RD",
       image: producer?.profileImage || engineer?.profileImage || artist?.profileImage || user.image,
-      bannerImage: producer?.bannerImage || engineer?.bannerImage || studio?.photos || null,
+      bannerImage: user.bannerImage || producer?.bannerImage || engineer?.bannerImage || studio?.photos || null,
       instagram: producer?.instagram || artist?.instagram,
       youtube: producer?.youtube || artist?.youtube,
       spotify: producer?.spotify || artist?.spotify,
       tiktok: producer?.tiktok,
-      website: producer?.website,
+      website: producer?.website || user.website,
+      beatstars: user.beatstars,
+      genres: producer?.genres || engineer?.specialties || artist?.genres || studio?.services,
+      email: user.emailVisible ? user.email : null,
       verified: producer?.verified || false,
       stats: { products: user.products.length, followers: user.followers.length, reviews: user.reviewsReceived.length }
     };
@@ -66,6 +74,7 @@ async function getFallbackProfile(username: string) {
   if (username !== "ellbopa" && username !== "ellbopamusic") return null;
   return {
     username: "ellbopa",
+    id: "ellbopa",
     name: "Ellbopa Music",
     role: "ADMIN",
     bio: "Estudio, productores e ingenieros urbanos en Santo Domingo.",

@@ -1,7 +1,7 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 import { auth } from "@/lib/auth";
-import { isConfiguredAdminEmail } from "@/lib/config";
+import { isAdminUser } from "@/lib/admin";
 import { canUploadProducts, normalizeRole } from "@/lib/roles";
 
 const f = createUploadthing();
@@ -49,7 +49,7 @@ function requireUploader(kind: UploadKind) {
     const session = await auth();
     const role = normalizeRole(session?.user?.role);
 
-    if (!session?.user?.id || (!canUploadProducts(role) && !isConfiguredAdminEmail(session.user.email))) {
+    if (!session?.user?.id || (!canUploadProducts(role) && !isAdminUser(session.user))) {
       throw new UploadThingError("No tienes permiso para subir archivos.");
     }
 
@@ -86,6 +86,17 @@ export const ourFileRouter = {
     blob: { maxFileSize: "512MB", maxFileCount: 1 }
   })
     .middleware(requireUploader("final"))
+    .onUploadComplete(({ file }) => completedUpload(file)),
+
+  profileImage: f({
+    image: { maxFileSize: "8MB", maxFileCount: 1 }
+  })
+    .middleware(async ({ files }) => {
+      const session = await auth();
+      if (!session?.user?.id) throw new UploadThingError("Debes iniciar sesion.");
+      validateUploadFiles("cover", files);
+      return { userId: session.user.id, role: normalizeRole(session.user.role) };
+    })
     .onUploadComplete(({ file }) => completedUpload(file))
 } satisfies FileRouter;
 

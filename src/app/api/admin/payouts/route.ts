@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { PayoutStatus, WalletTransactionType } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isConfiguredAdminEmail } from "@/lib/config";
+import { isAdminUser } from "@/lib/admin";
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN" && !isConfiguredAdminEmail(session?.user?.email)) {
+  if (!isAdminUser(session?.user)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

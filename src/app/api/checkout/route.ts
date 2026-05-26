@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
-import { hasStripeConfig } from "@/lib/config";
 import { getProducts } from "@/lib/products";
 import { saveLocalOrder, saveLocalPayment, updateLocalOrder } from "@/lib/local-workflow";
 import type { CartItem } from "@/lib/cart";
@@ -19,15 +17,6 @@ type CheckoutProduct = {
   ownerId?: string | null;
   imageUrl?: string | null;
   audioUrl?: string | null;
-};
-
-type CheckoutMetadata = {
-  productId?: string;
-  productIds?: string;
-  licenseType?: string;
-  licenseTypes?: string;
-  productType?: string;
-  productTypes?: string;
 };
 
 export async function POST(request: Request) {
@@ -52,7 +41,7 @@ export async function POST(request: Request) {
   const orderId = String(formData.get("orderId") ?? "");
   const bookingId = String(formData.get("bookingId") ?? "");
   const mode = String(formData.get("mode") ?? "deposit");
-  const paymentMethod = String(formData.get("paymentMethod") ?? "stripe");
+  const paymentMethod = String(formData.get("paymentMethod") ?? "paypal");
   const license = String(formData.get("license") ?? "basic");
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
 
@@ -60,7 +49,10 @@ export async function POST(request: Request) {
   let amount = 0;
   let targetOrderId: string | undefined;
   let targetBookingId: string | undefined;
-  let checkoutMetadata: CheckoutMetadata = {};
+
+  if (paymentMethod !== "paypal" && paymentMethod !== "transfer") {
+    return NextResponse.redirect(new URL(`/checkout?${productId ? `productId=${encodeURIComponent(productId)}&` : ""}error=payment-method-disabled`, request.url), { status: 303 });
+  }
 
   try {
     if (cartJson) {
@@ -98,11 +90,6 @@ export async function POST(request: Request) {
 
       amount = selected.reduce((sum, product) => sum + product.price, 0);
       title = selected.length === 1 ? selected[0].title : `Compra Ellbopa (${selected.length} productos)`;
-      checkoutMetadata = {
-        productIds: selected.map((item) => item.product.id).join(","),
-        productTypes: selected.map((item) => item.type).join(","),
-        licenseTypes: selected.map((item) => item.licenseType).join(",")
-      };
 
       try {
         const order = await prisma.order.create({
@@ -191,11 +178,6 @@ export async function POST(request: Request) {
       title = product.title;
       if (selectedLicense) title = `${product.title} (${selectedLicense.title})`;
       amount = mode === "deposit" ? depositAmount : productPrice;
-      checkoutMetadata = {
-        productId: product.id,
-        productType: product.type,
-        licenseType: selectedLicense?.key ?? "digital"
-      };
     }
 
     if (orderId) {
@@ -234,7 +216,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Checkout amount missing" }, { status: 400 });
   }
 
-  if (paymentMethod === "transfer" || (paymentMethod === "stripe" && !hasStripeConfig())) {
+  if (paymentMethod === "transfer") {
     try {
       await prisma.payment.create({
         data: {
@@ -293,88 +275,7 @@ export async function POST(request: Request) {
     }
   }
 
-  try {
-    if (process.env.NODE_ENV === "development") {
-      console.error("[checkout][creating-stripe-session]", {
-        userId: session.user.id,
-        orderId: targetOrderId,
-        bookingId: targetBookingId,
-        amount,
-        productId: checkoutMetadata.productId,
-        productIds: checkoutMetadata.productIds
-      });
-    }
-
-    const checkout = await stripe.checkout.sessions.create({
-      mode: "payment",
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: "dop",
-            unit_amount: amount * 100,
-            product_data: { name: title }
-          }
-        }
-      ],
-      metadata: {
-        userId: session.user.id,
-        userEmail: session.user.email ?? "",
-        orderId: targetOrderId ?? "",
-        bookingId: targetBookingId ?? "",
-        amount: String(amount),
-        productId: checkoutMetadata.productId ?? "",
-        productIds: checkoutMetadata.productIds ?? "",
-        licenseType: checkoutMetadata.licenseType ?? "",
-        licenseTypes: checkoutMetadata.licenseTypes ?? "",
-        productType: checkoutMetadata.productType ?? "",
-        productTypes: checkoutMetadata.productTypes ?? ""
-      },
-      success_url: `${siteUrl}/compras?success=1&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${siteUrl}/compras?cancelled=1`
-    });
-
-    try {
-      await prisma.payment.create({
-        data: {
-          userId: session.user.id,
-          orderId: targetOrderId,
-          bookingId: targetBookingId,
-          stripeSessionId: checkout.id,
-          paymentIntentId: typeof checkout.payment_intent === "string" ? checkout.payment_intent : checkout.payment_intent?.id,
-          method: "STRIPE",
-          amount,
-          receiptUrl: checkout.url
-        }
-      });
-      if (process.env.NODE_ENV === "development") {
-        console.error("[checkout][payment-created]", {
-          userId: session.user.id,
-          orderId: targetOrderId,
-          bookingId: targetBookingId,
-          stripeSessionId: checkout.id,
-          amount
-        });
-      }
-    } catch (error) {
-      console.error("[checkout][stripe payment local]", error);
-      await saveLocalPayment({
-        userId: session.user.id,
-        orderId: targetOrderId,
-        bookingId: targetBookingId,
-        stripeSessionId: checkout.id,
-        paymentIntentId: typeof checkout.payment_intent === "string" ? checkout.payment_intent : checkout.payment_intent?.id,
-        amount,
-        receiptUrl: checkout.url
-      });
-    }
-
-    return NextResponse.redirect(checkout.url ?? `${siteUrl}/cliente`, { status: 303 });
-  } catch (error) {
-    console.error("[checkout][stripe]", error);
-    return NextResponse.redirect(new URL("/gracias?tipo=pago", request.url));
-  }
+  return NextResponse.redirect(new URL(`/checkout?${productId ? `productId=${encodeURIComponent(productId)}&` : ""}error=payment-method-disabled`, request.url), { status: 303 });
 }
 
 function parseCart(value: string) {

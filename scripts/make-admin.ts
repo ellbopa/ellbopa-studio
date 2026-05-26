@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
+const OWNER_ADMIN_EMAIL = "ellbopamusic@gmail.com";
 
 function normalizeEmail(value?: string) {
   return value?.trim().toLowerCase();
@@ -15,6 +16,11 @@ async function main() {
 
   if (!isEmail(email)) {
     console.error("Uso: npm run make:admin -- email@dominio.com");
+    process.exitCode = 1;
+    return;
+  }
+  if (email !== OWNER_ADMIN_EMAIL) {
+    console.error(`Por seguridad solo ${OWNER_ADMIN_EMAIL} puede ser ADMIN en esta plataforma.`);
     process.exitCode = 1;
     return;
   }

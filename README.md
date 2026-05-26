@@ -30,7 +30,7 @@ Plataforma musical premium tipo marketplace para beats, presets, sound kits, ser
 - Perfiles publicos en `/u/[username]`.
 - Dashboard de artista, productor, ingeniero y estudio.
 - Admin panel con ventas, ordenes, reservas, usuarios activos, productos, pagos, settings y notificaciones.
-- Checkout con Stripe, PayPal o transferencia.
+- Checkout con PayPal o transferencia. Stripe queda preparado en codigo/webhook, pero desactivado del checkout publico mientras se usa PayPal.
 - Webhook de Stripe para marcar pagos, desbloquear descargas y enviar email.
 - Descargas privadas en `/descargas/[orderId]`.
 - Upload real de cover, preview MP3/WAV y archivos finales MP3/WAV/ZIP con UploadThing.
@@ -242,13 +242,13 @@ npm run dev
 
 3. Registra tu primera cuenta desde `/registro` o con Google.
 
-4. Promueve esa cuenta a admin usando el email exacto registrado:
+4. Promueve la cuenta dueña a admin usando el email exacto registrado:
 
 ```bash
-npm run make:admin -- tu-email@dominio.com
+npm run make:admin -- ellbopamusic@gmail.com
 ```
 
-Este comando es seguro para produccion beta: no crea usuarios, no crea productos y no inserta datos demo. Si el email no existe, falla y te pide registrar la cuenta primero.
+Este comando es seguro para produccion beta: no crea usuarios, no crea productos y no inserta datos demo. Por seguridad solo permite convertir en admin a `ellbopamusic@gmail.com`. Si el email no existe, falla y te pide registrar la cuenta primero.
 
 5. Cierra sesion y vuelve a iniciar sesion para refrescar el rol.
 
@@ -328,10 +328,33 @@ npm run clean:beta -- --confirm --include-non-admin-users
 
 No ejecutes la limpieza real sin confirmar que ya no necesitas esos datos.
 
+## Limpieza production-ready
+
+Para dejar la plataforma limpia para contenido real, revisa primero conteos sin borrar nada:
+
+```bash
+npm run clean:production-ready
+```
+
+Cuando confirmes que quieres borrar contenido de prueba, ejecuta:
+
+```bash
+npm run clean:production-ready -- --confirm
+```
+
+Este script:
+
+- crea backup en `backups/`
+- conserva siempre `ellbopamusic@gmail.com`
+- fuerza que solo `ellbopamusic@gmail.com` tenga rol `ADMIN`
+- baja cualquier otro `ADMIN` a `ARTIST`
+- borra productos, ordenes, pagos, wallets, payouts, posts, favoritos, follows y reviews
+- no borra usuarios normales
+
 ## Produccion
 
 - Configura PostgreSQL real y ejecuta `npx prisma migrate dev` o migraciones equivalentes.
-- Configura Stripe live keys, `STRIPE_WEBHOOK_SECRET` y webhook live.
+- Configura Stripe live keys, `STRIPE_WEBHOOK_SECRET` y webhook live solo si decides reactivar Stripe en checkout.
 - Configura PayPal live si quieres aceptar PayPal en produccion.
 - Configura SMTP real para OTP, recuperacion, recibos y compras.
 - Configura `UPLOADTHING_TOKEN` para subir archivos grandes fuera del servidor.

@@ -88,9 +88,6 @@ export function CartPageClient() {
             <form action="/api/checkout" method="POST" className="mt-5 space-y-4">
               <input type="hidden" name="cartJson" value={JSON.stringify(items)} />
               <input type="hidden" name="mode" value="full" />
-              <button name="paymentMethod" value="stripe" className="flex w-full items-center justify-center gap-2 rounded-md bg-studio-red px-5 py-3 font-black glow-button">
-                <CreditCard size={18} /> Pagar con tarjeta
-              </button>
               <button name="paymentMethod" value="paypal" className="flex w-full items-center justify-center gap-2 rounded-md border border-blue-400/45 bg-blue-500/10 px-5 py-3 font-black text-blue-100 transition hover:bg-blue-600 hover:text-white">
                 <CreditCard size={18} /> Pagar con PayPal
               </button>

@@ -58,6 +58,16 @@ model User {
   emailVerified DateTime?
   verified     Boolean   @default(false)
   image        String?
+  bannerImage  String?
+  country      String?
+  specialty    String?
+  availability String?
+  beatstars    String?
+  website      String?
+  contactLinks String?
+  emailVisible Boolean   @default(false)
+  payoutPaypal String?
+  notificationPrefs String?
   passwordHash String?
   phone        String?
   accountType  String?   @default("ARTIST")

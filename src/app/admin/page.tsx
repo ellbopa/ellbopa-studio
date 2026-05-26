@@ -34,7 +34,7 @@ import { formatDop } from "@/lib/format";
 import { getSiteConfig, listToTextarea } from "@/lib/site-config";
 import { getLocalBookings, getLocalOrders, getLocalPayments } from "@/lib/local-workflow";
 import { getProducts } from "@/lib/products";
-import { isConfiguredAdminEmail } from "@/lib/config";
+import { isAdminUser } from "@/lib/admin";
 import { getActivity } from "@/lib/activity";
 import { getNotifications } from "@/lib/notifications";
 import { ProductUploadForm } from "@/components/product-upload-form";
@@ -67,7 +67,7 @@ const navItems = [
 export default async function AdminPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/cliente/login");
-  if (session.user.role !== "ADMIN" && !isConfiguredAdminEmail(session.user.email)) redirect("/cliente");
+  if (!isAdminUser(session.user)) redirect("/");
 
   let orders: Array<any> = [];
   let bookings: Array<any> = [];
@@ -113,7 +113,6 @@ export default async function AdminPage() {
   const storageItems = getStorageItems(products);
   const conversion = orders.length ? Math.round((paidPayments.length / orders.length) * 100) : 0;
   const uploadConfigured = Boolean(process.env.UPLOADTHING_TOKEN || (process.env.UPLOADTHING_SECRET && process.env.UPLOADTHING_APP_ID));
-  const stripeMode = process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") ? "LIVE" : process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_") ? "TEST" : "NO CONFIG";
   const paypalMode = process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET ? (process.env.PAYPAL_ENV === "live" ? "LIVE" : "SANDBOX") : "NO CONFIG";
   const platformFees = orders.reduce((sum, order) => sum + Number(order.platformFeeAmount || 0), 0);
   const creatorBalances = wallets.reduce((sum, wallet) => sum + Number(wallet.availableBalance || 0) + Number(wallet.pendingBalance || 0), 0);
@@ -200,7 +199,7 @@ export default async function AdminPage() {
                   <Metric icon={CalendarDays} label="Reservas" value={bookings.length} detail={`${pendingBookings} pendientes`} />
                   <Metric icon={Users} label="Clientes activos" value={activity.activeCount} detail={`${users.length || "Modo local"} registrados`} />
                   <Metric icon={Activity} label="Streams / plays" value={pageViews.reduce((sum, page) => sum + page.count, 0)} detail="Actividad reciente" />
-                  <Metric icon={CreditCard} label="Stripe" value={stripeMode} detail="No muestra claves privadas" />
+                  <Metric icon={CreditCard} label="Stripe" value="OFF" detail="Desactivado en checkout" />
                   <Metric icon={Wallet} label="PayPal" value={paypalMode} detail="Metodo adicional" />
                 </div>
               </div>

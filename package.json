@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "make:admin": "tsx scripts/make-admin.ts",
     "clean:beta": "tsx scripts/clean-beta.ts",
+    "clean:production-ready": "tsx scripts/clean-production-ready.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts"

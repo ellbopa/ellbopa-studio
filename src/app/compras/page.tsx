@@ -49,12 +49,12 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Pr
       {params.success ? <ClearCartOnSuccess /> : null}
       {params.cancelled ? (
         <div className="mb-6 rounded-lg border border-studio-gold/25 bg-studio-gold/10 p-4 text-sm font-bold text-studio-gold">
-          Pago cancelado. Tu tarjeta no fue cobrada y puedes intentarlo otra vez cuando quieras.
+          Pago cancelado. No se completo ningun cobro y puedes intentarlo otra vez cuando quieras.
         </div>
       ) : null}
       {params.success ? (
         <div className="mb-6 rounded-lg border border-emerald-400/25 bg-emerald-400/10 p-4 text-sm font-bold text-emerald-200">
-          Pago recibido. Si Stripe acaba de confirmar, tus descargas pueden tardar unos segundos en aparecer.
+          Pago recibido. Tus descargas pueden tardar unos segundos en aparecer.
         </div>
       ) : null}
       {process.env.NODE_ENV === "development" ? (

@@ -2,7 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Bell, ChevronDown, Grid3X3, Heart, LogOut, Music2, Search, Settings, Upload, UserRound, WandSparkles } from "lucide-react";
 import { auth } from "@/lib/auth";
-import { isConfiguredAdminEmail } from "@/lib/config";
+import { isAdminUser } from "@/lib/admin";
+import { canUploadProducts } from "@/lib/roles";
 import { CartLink } from "@/components/cart-link";
 import { getActiveNotifications } from "@/lib/notifications";
 
@@ -26,7 +27,8 @@ const nav = [
 
 export async function Header() {
   const session = await auth();
-  const isAdmin = session?.user?.role === "ADMIN" || isConfiguredAdminEmail(session?.user?.email);
+  const isAdmin = isAdminUser(session?.user);
+  const canCreate = canUploadProducts(session?.user?.role) || isAdmin;
   const visibleNav = isAdmin ? nav : nav.filter(([, href]) => href !== "/admin");
   const notifications = await getActiveNotifications(session?.user?.role);
 
@@ -68,14 +70,14 @@ export async function Header() {
         </form>
 
         <div className="group/create relative hidden shrink-0 sm:block">
-          <Link href={isAdmin ? "/admin#upload" : "/login?next=/admin"} className="inline-flex h-11 items-center gap-2 rounded-md bg-studio-red px-4 text-sm font-black text-white shadow-glow transition hover:-translate-y-0.5">
+          <Link href={canCreate ? "/dashboard/producer/upload" : "/login?next=/onboarding"} className="inline-flex h-11 items-center gap-2 rounded-md bg-studio-red px-4 text-sm font-black text-white shadow-glow transition hover:-translate-y-0.5">
             Subir <Upload size={16} />
           </Link>
-          {isAdmin ? (
+          {canCreate ? (
             <div className="pointer-events-none absolute right-0 top-12 w-56 rounded-lg border border-white/10 bg-[#151515] p-2 opacity-0 shadow-[0_24px_70px_rgba(0,0,0,.55)] transition group-hover/create:pointer-events-auto group-hover/create:opacity-100">
-              <Link href="/admin" className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-bold text-white/78 hover:bg-white/[0.06] hover:text-white"><Music2 size={17} /> Crear Track</Link>
-              <Link href="/admin" className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-bold text-white/78 hover:bg-white/[0.06] hover:text-white"><WandSparkles size={17} /> Crear Sound Kit</Link>
-              <Link href="/admin" className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-bold text-white/78 hover:bg-white/[0.06] hover:text-white"><Upload size={17} /> Upload Files</Link>
+              <Link href="/dashboard/producer/upload" className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-bold text-white/78 hover:bg-white/[0.06] hover:text-white"><Music2 size={17} /> Crear Track</Link>
+              <Link href="/dashboard/producer/upload" className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-bold text-white/78 hover:bg-white/[0.06] hover:text-white"><WandSparkles size={17} /> Crear Sound Kit</Link>
+              <Link href="/dashboard/producer/products" className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-bold text-white/78 hover:bg-white/[0.06] hover:text-white"><Upload size={17} /> Mis productos</Link>
             </div>
           ) : null}
         </div>
@@ -134,8 +136,10 @@ export async function Header() {
               <Link href="/compras" className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-bold text-white/76 hover:bg-white/[0.06] hover:text-white"><Heart size={18} /> Favorites</Link>
               <Link href="/compras" className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-bold text-white/76 hover:bg-white/[0.06] hover:text-white"><Upload size={18} /> Downloads</Link>
               <Link href="/cliente" className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-bold text-white/76 hover:bg-white/[0.06] hover:text-white"><Music2 size={18} /> Messages</Link>
-              <Link href="/cliente" className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-bold text-white/76 hover:bg-white/[0.06] hover:text-white"><Settings size={18} /> Account Settings</Link>
-              {isAdmin ? <Link href="/admin" className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-bold text-studio-gold hover:bg-white/[0.06]">Studio Profile</Link> : null}
+              <Link href="/settings" className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-bold text-white/76 hover:bg-white/[0.06] hover:text-white"><Settings size={18} /> Account Settings</Link>
+              {canCreate ? <Link href="/dashboard/producer/products" className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-bold text-white/76 hover:bg-white/[0.06] hover:text-white">Mis productos</Link> : null}
+              {canCreate ? <Link href="/dashboard/producer" className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-bold text-white/76 hover:bg-white/[0.06] hover:text-white">Wallet</Link> : null}
+              {isAdmin ? <Link href="/admin" className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-bold text-studio-gold hover:bg-white/[0.06]">Admin</Link> : null}
               {session?.user?.id ? (
                 <Link href="/api/auth/signout" className="mt-2 flex items-center gap-3 border-t border-white/10 px-3 py-3 text-sm font-bold text-white/60 hover:text-white"><LogOut size={18} /> Log out</Link>
               ) : (

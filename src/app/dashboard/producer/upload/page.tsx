@@ -1,11 +1,16 @@
 import { Upload } from "lucide-react";
-import { requireDashboardRole } from "@/app/dashboard/_lib";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { canUploadProducts } from "@/lib/roles";
+import { isAdminUser } from "@/lib/admin";
 import { ProductUploadForm } from "@/components/product-upload-form";
 
 export const metadata = { title: "Subir Beat" };
 
 export default async function ProducerUploadPage() {
-  await requireDashboardRole("PRODUCER");
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login?next=/dashboard/producer/upload");
+  if (!canUploadProducts(session.user.role) && !isAdminUser(session.user)) redirect("/");
   const uploadConfigured = Boolean(process.env.UPLOADTHING_TOKEN || (process.env.UPLOADTHING_SECRET && process.env.UPLOADTHING_APP_ID));
 
   return (
