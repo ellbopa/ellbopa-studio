@@ -1,7 +1,7 @@
 export function AnimatedBackground() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(122,0,8,.38),transparent_28rem),radial-gradient(circle_at_82%_4%,rgba(217,164,65,.14),transparent_24rem),radial-gradient(circle_at_54%_90%,rgba(229,9,20,.14),transparent_30rem),#030303]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,var(--brand-glow),transparent_28rem),radial-gradient(circle_at_82%_4%,rgba(217,164,65,.14),transparent_24rem),radial-gradient(circle_at_54%_90%,var(--brand-glow),transparent_30rem),#030303]" />
       <div className="cinematic-grid absolute inset-0 opacity-70" />
       <div className="red-particle-field absolute inset-0" />
       <div className="aurora-orbit absolute left-[-12rem] top-20 h-96 w-96 rounded-full bg-studio-red/20 blur-3xl" />

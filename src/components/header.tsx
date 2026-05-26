@@ -17,9 +17,7 @@ const nav = [
   ["Sound Kits", "/sound-kits"],
   ["Studio", "/reservas"],
   ["Comunidad", "/comunidad"],
-  ["Favoritos", "/compras"],
   ["Mezcla", "/mezcla-online"],
-  ["Reservas", "/reservas"],
   ["Cliente", "/cliente"],
   ["Compras", "/compras"],
   ["Admin", "/admin"]
@@ -37,6 +35,8 @@ export async function Header() {
       <div className="border-b border-white/8 bg-black px-4 py-2 text-center text-xs font-bold text-white/78 sm:text-sm">
         Sube tus instrumentales, vende presets y reserva estudio desde Ellbopa Music
       </div>
+
+      <div className="absolute inset-x-0 top-0 h-px theme-gradient opacity-70" />
 
       <div className="mx-auto flex max-w-[1620px] items-center gap-3 px-4 py-3 sm:px-6">
         <Link href="/" className="group flex shrink-0 items-center gap-3">
@@ -65,7 +65,7 @@ export async function Header() {
           <input
             name="q"
             placeholder="Explore sounds, search instrumentals, presets, services..."
-            className="h-12 w-full rounded-md border border-white/10 bg-white/[0.075] pl-12 pr-4 text-sm font-semibold text-white/82 outline-none transition placeholder:text-white/34 hover:border-studio-red/30 focus:border-studio-red/60 focus:shadow-[0_0_36px_rgba(229,9,20,.18)]"
+            className="h-12 w-full rounded-md border border-white/10 bg-white/[0.075] pl-12 pr-4 text-sm font-semibold text-white/82 outline-none transition placeholder:text-white/34 hover:border-[var(--brand-border)] focus:border-[var(--brand-border)] focus:shadow-[0_0_36px_var(--brand-glow)]"
           />
         </form>
 

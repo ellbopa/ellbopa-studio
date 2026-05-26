@@ -8,6 +8,9 @@
   --brand-primary-hover: #ff4b4b;
   --brand-glow: rgba(255, 31, 31, 0.36);
   --brand-border: rgba(255, 31, 31, 0.42);
+  --brand-gradient: linear-gradient(135deg, #ff1f1f, #d9a441);
+  --color-studio-red: 255 31 31;
+  --color-studio-gold: 217 164 65;
 }
 
 * {
@@ -48,7 +51,7 @@ textarea {
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(115deg, transparent 0%, rgba(229, 9, 20, 0.12) 48%, transparent 52%);
+    linear-gradient(115deg, transparent 0%, color-mix(in srgb, var(--brand-primary) 14%, transparent) 48%, transparent 52%);
   background-position: center;
   background-size: 58px 58px, 58px 58px, 240% 240%;
   mask-image: radial-gradient(circle at 50% 32%, black, transparent 72%);
@@ -57,7 +60,7 @@ textarea {
 
 .red-particle-field {
   background-image:
-    radial-gradient(circle, rgba(229, 9, 20, 0.7) 0 1px, transparent 1.7px),
+    radial-gradient(circle, color-mix(in srgb, var(--brand-primary) 72%, transparent) 0 1px, transparent 1.7px),
     radial-gradient(circle, rgba(217, 164, 65, 0.38) 0 1px, transparent 1.8px);
   background-position: 0 0, 38px 72px;
   background-size: 160px 160px, 220px 220px;
@@ -158,6 +161,16 @@ textarea {
   box-shadow: 0 0 22px var(--brand-glow), inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
+.theme-gradient {
+  background: var(--brand-gradient);
+}
+
+.brand-soft-surface {
+  background:
+    radial-gradient(circle at 22% 12%, var(--brand-glow), transparent 24rem),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.018));
+}
+
 .premium-action {
   position: relative;
   overflow: hidden;
@@ -192,12 +205,12 @@ textarea {
 }
 
 .hero-title {
-  text-shadow: 0 0 36px rgba(229, 9, 20, 0.12);
+  text-shadow: 0 0 36px var(--brand-glow);
 }
 
 .text-glow-red {
   color: #fff;
-  text-shadow: 0 0 18px rgba(229, 9, 20, 0.62), 0 0 70px rgba(229, 9, 20, 0.34);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--brand-primary) 62%, transparent), 0 0 70px var(--brand-glow);
 }
 
 .hero-video-shell::before {
@@ -206,7 +219,7 @@ textarea {
   inset: -20%;
   z-index: 1;
   pointer-events: none;
-  background: conic-gradient(from 90deg, transparent, rgba(229, 9, 20, 0.16), transparent, rgba(217, 164, 65, 0.08), transparent);
+  background: conic-gradient(from 90deg, transparent, color-mix(in srgb, var(--brand-primary) 16%, transparent), transparent, rgba(217, 164, 65, 0.08), transparent);
   animation: slowSpin 18s linear infinite;
 }
 
@@ -256,6 +269,21 @@ textarea {
 
 .bg-studio-red {
   background-color: var(--brand-primary) !important;
+}
+
+.from-studio-red {
+  --tw-gradient-from: var(--brand-primary) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: color-mix(in srgb, var(--brand-primary) 0%, transparent) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.via-studio-red {
+  --tw-gradient-to: color-mix(in srgb, var(--brand-primary) 0%, transparent) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--brand-primary) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+.to-studio-red {
+  --tw-gradient-to: var(--brand-primary) var(--tw-gradient-to-position) !important;
 }
 
 .text-studio-red {

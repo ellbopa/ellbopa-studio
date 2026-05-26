@@ -27,6 +27,9 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const config = await getSiteConfig();
   const primary = config.primaryColor || "#ff1f1f";
+  const gold = config.goldColor || "#d9a441";
+  const primaryRgb = hexToRgb(primary, "255 31 31");
+  const goldRgb = hexToRgb(gold, "217 164 65");
 
   return (
     <html lang="es" data-scroll-behavior="smooth" suppressHydrationWarning>
@@ -35,11 +38,14 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         style={
           {
             "--cms-red": primary,
-            "--cms-gold": config.goldColor,
+            "--cms-gold": gold,
+            "--color-studio-red": primaryRgb,
+            "--color-studio-gold": goldRgb,
             "--brand-primary": primary,
             "--brand-primary-hover": `color-mix(in srgb, ${primary} 82%, white)`,
             "--brand-glow": `color-mix(in srgb, ${primary} 36%, transparent)`,
-            "--brand-border": `color-mix(in srgb, ${primary} 42%, transparent)`
+            "--brand-border": `color-mix(in srgb, ${primary} 42%, transparent)`,
+            "--brand-gradient": `linear-gradient(135deg, ${primary}, color-mix(in srgb, ${primary} 48%, ${gold}))`
           } as React.CSSProperties
         }
       >
@@ -53,4 +59,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       </body>
     </html>
   );
+}
+
+function hexToRgb(value: string, fallback: string) {
+  const match = value.trim().match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+  if (!match) return fallback;
+  const [, r, g, b] = match;
+  return `${parseInt(r, 16)} ${parseInt(g, 16)} ${parseInt(b, 16)}`;
 }

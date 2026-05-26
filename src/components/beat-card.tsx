@@ -28,7 +28,7 @@ export function BeatCard({ product, index = 0, isFavorite = false }: BeatCardPro
 
   return (
     <article className="group beat-tile">
-      <div className="relative aspect-square overflow-hidden rounded-lg border border-white/10 bg-studio-smoke shadow-[0_20px_55px_rgba(0,0,0,.35)]">
+      <div className="relative aspect-square overflow-hidden rounded-2xl border border-white/10 bg-studio-smoke shadow-[0_20px_55px_rgba(0,0,0,.35)] transition group-hover:border-[var(--brand-border)] group-hover:shadow-[0_0_36px_var(--brand-glow)]">
         <Image
           src={product.imageUrl || "/images/beat-cover.svg"}
           alt={product.title}
@@ -75,7 +75,7 @@ export function BeatCard({ product, index = 0, isFavorite = false }: BeatCardPro
             genre: product.genre
           }}
         />
-        <Link href={`/checkout?productId=${encodeURIComponent(product.id)}`} className="flex w-full items-center justify-center gap-2 rounded-md border border-studio-red/45 bg-black/80 px-4 py-3 text-sm font-black text-white shadow-[0_0_24px_rgba(229,9,20,.12)] transition hover:border-studio-red hover:bg-studio-red hover:shadow-glow">
+        <Link href={`/checkout?productId=${encodeURIComponent(product.id)}`} className="flex w-full items-center justify-center gap-2 rounded-md border border-studio-red/45 bg-black/80 px-4 py-3 text-sm font-black text-white shadow-[0_0_24px_var(--brand-glow)] transition hover:border-studio-red hover:bg-studio-red hover:shadow-glow">
             <ShoppingBag size={16} /> {formatDop(product.price)}
         </Link>
         </div>

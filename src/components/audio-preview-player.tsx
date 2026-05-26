@@ -89,7 +89,7 @@ export function AudioPreviewPlayer({ audioUrl, title = "Preview", compact = fals
   }
 
   return (
-    <div className={`group rounded-xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.025))] p-3 shadow-[0_18px_45px_rgba(0,0,0,.28)] backdrop-blur-xl transition hover:border-studio-red/45 hover:shadow-[0_0_34px_rgba(229,9,20,.18)] ${compact ? "" : "sm:p-4"}`}>
+    <div className={`group rounded-xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.025))] p-3 shadow-[0_18px_45px_rgba(0,0,0,.28)] backdrop-blur-xl transition hover:border-[var(--brand-border)] hover:shadow-[0_0_34px_var(--brand-glow)] ${compact ? "" : "sm:p-4"}`}>
       <audio
         ref={audioRef}
         src={audioUrl}
@@ -131,7 +131,7 @@ export function AudioPreviewPlayer({ audioUrl, title = "Preview", compact = fals
           onClick={togglePlayback}
           disabled={hasError}
           aria-label={isPlaying ? `Pausar ${title}` : `Reproducir ${title}`}
-          className="grid size-11 shrink-0 place-items-center rounded-full bg-studio-red text-white shadow-glow transition hover:scale-105 hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35"
+          className="grid size-11 shrink-0 place-items-center rounded-full bg-studio-red text-white shadow-glow transition hover:scale-105 hover:bg-[var(--brand-primary-hover)] disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/35"
         >
           {hasError ? <AlertCircle className="h-5 w-5" /> : isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : isPlaying ? <Pause className="h-5 w-5 fill-white" /> : <Play className="ml-0.5 h-5 w-5 fill-white" />}
         </button>
@@ -146,7 +146,7 @@ export function AudioPreviewPlayer({ audioUrl, title = "Preview", compact = fals
           </div>
 
           <div className="relative h-3 w-full overflow-hidden rounded-full bg-white/10">
-            <span className="pointer-events-none absolute inset-y-0 left-0 rounded-full bg-[linear-gradient(90deg,#e50914,#d9a441)] shadow-[0_0_18px_rgba(229,9,20,.45)] transition-[width]" style={{ width: `${progress}%` }} />
+            <span className="pointer-events-none absolute inset-y-0 left-0 rounded-full theme-gradient shadow-[0_0_18px_var(--brand-glow)] transition-[width]" style={{ width: `${progress}%` }} />
             <span className="pointer-events-none absolute inset-0 opacity-45 [background-image:repeating-linear-gradient(90deg,transparent_0,transparent_7px,rgba(255,255,255,.45)_8px,transparent_10px)]" />
             <input
               type="range"
