@@ -92,6 +92,7 @@ model User {
   following    Follow[] @relation("FollowSource")
   reviewsGiven Review[] @relation("ReviewAuthor")
   reviewsReceived Review[] @relation("ReviewTarget")
+  pageViews    PageView[]
   verificationCodes VerificationCode[]
   passwordResetTokens PasswordResetToken[]
   artistProfile ArtistProfile?
@@ -325,6 +326,24 @@ model ProductView {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, createdAt])
+}
+
+model PageView {
+  id        String   @id @default(cuid())
+  userId    String?
+  visitorId String
+  path      String
+  userAgent String?
+  email     String?
+  name      String?
+  role      String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([visitorId, createdAt])
+  @@index([path, createdAt])
+  @@index([userId, createdAt])
 }
 
 model Order {

@@ -15,6 +15,7 @@ export async function POST(request: Request) {
   }
 
   await recordActivity({
+    userId: session?.user?.id,
     visitorId: body.visitorId,
     path: body.path || "/",
     userAgent: body.userAgent || request.headers.get("user-agent"),

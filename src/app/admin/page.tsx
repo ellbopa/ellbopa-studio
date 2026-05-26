@@ -32,8 +32,6 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDop } from "@/lib/format";
 import { getSiteConfig, listToTextarea } from "@/lib/site-config";
-import { getLocalBookings, getLocalOrders, getLocalPayments } from "@/lib/local-workflow";
-import { getProducts } from "@/lib/products";
 import { isAdminUser } from "@/lib/admin";
 import { getActivity } from "@/lib/activity";
 import { getNotifications } from "@/lib/notifications";
@@ -76,29 +74,33 @@ export default async function AdminPage() {
   let users: Array<any> = [];
   let payoutRequests: Array<any> = [];
   let wallets: Array<any> = [];
+  let totalUsers = 0;
+  let totalProducts = 0;
+  let totalOrders = 0;
+  let totalPayments = 0;
+  let totalPageViews = 0;
+  let usersToday = 0;
   const siteConfig = await getSiteConfig();
   const activity = await getActivity();
   const notifications = await getNotifications();
 
-  try {
-    [orders, bookings, products, payments, users, payoutRequests, wallets] = await Promise.all([
-      prisma.order.findMany({ include: { user: true, product: true }, orderBy: { createdAt: "desc" } }),
-      prisma.booking.findMany({ include: { user: true }, orderBy: { createdAt: "desc" } }),
-      prisma.product.findMany({ orderBy: { createdAt: "desc" } }),
-      prisma.payment.findMany({ include: { user: true }, orderBy: { createdAt: "desc" } }),
-      prisma.user.findMany({ orderBy: { createdAt: "desc" }, take: 50 }),
-      prisma.payoutRequest.findMany({ include: { user: true }, orderBy: { createdAt: "desc" }, take: 50 }),
-      prisma.wallet.findMany({ include: { user: true }, orderBy: { updatedAt: "desc" }, take: 50 })
-    ]);
-  } catch {
-    [orders, bookings, products, payments] = await Promise.all([
-      getLocalOrders(),
-      getLocalBookings(),
-      getProducts(),
-      getLocalPayments()
-    ]);
-    users = [];
-  }
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  [orders, bookings, products, payments, users, payoutRequests, wallets, totalUsers, totalProducts, totalOrders, totalPayments, totalPageViews, usersToday] = await Promise.all([
+    prisma.order.findMany({ include: { user: true, product: true }, orderBy: { createdAt: "desc" }, take: 250 }),
+    prisma.booking.findMany({ include: { user: true }, orderBy: { createdAt: "desc" }, take: 250 }),
+    prisma.product.findMany({ orderBy: { createdAt: "desc" }, include: { owner: true, _count: { select: { orders: true, favorites: true, views: true } } }, take: 250 }),
+    prisma.payment.findMany({ include: { user: true, order: { include: { product: true } } }, orderBy: { createdAt: "desc" }, take: 250 }),
+    prisma.user.findMany({ orderBy: { createdAt: "desc" }, include: { _count: { select: { orders: true, products: true, payments: true, pageViews: true } } }, take: 100 }),
+    prisma.payoutRequest.findMany({ include: { user: true }, orderBy: { createdAt: "desc" }, take: 50 }),
+    prisma.wallet.findMany({ include: { user: true }, orderBy: { updatedAt: "desc" }, take: 50 }),
+    prisma.user.count(),
+    prisma.product.count(),
+    prisma.order.count(),
+    prisma.payment.count(),
+    prisma.pageView.count(),
+    prisma.user.count({ where: { createdAt: { gte: todayStart } } })
+  ]);
 
   const paidPayments = payments.filter((payment) => payment.status === "PAID");
   const revenue = paidPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0) || orders.reduce((sum, order) => sum + Number(order.paidAmount || 0), 0);
@@ -113,9 +115,14 @@ export default async function AdminPage() {
   const storageItems = getStorageItems(products);
   const conversion = orders.length ? Math.round((paidPayments.length / orders.length) * 100) : 0;
   const uploadConfigured = Boolean(process.env.UPLOADTHING_TOKEN || (process.env.UPLOADTHING_SECRET && process.env.UPLOADTHING_APP_ID));
-  const paypalMode = process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET ? (process.env.PAYPAL_ENV === "live" ? "LIVE" : "SANDBOX") : "NO CONFIG";
+  const paypalMode = process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET ? (process.env.PAYPAL_ENV === "live" ? "LIVE" : "SANDBOX") : "OFF";
+  const stripeMode = getStripeMode();
+  const databaseMode = getDatabaseMode();
   const platformFees = orders.reduce((sum, order) => sum + Number(order.platformFeeAmount || 0), 0);
   const creatorBalances = wallets.reduce((sum, wallet) => sum + Number(wallet.availableBalance || 0) + Number(wallet.pendingBalance || 0), 0);
+  const salesByDay = groupMoneyByDay(paidPayments, "amount", 12);
+  const registrationsByDay = groupCountByDay(users, 12);
+  const revenueByMonth = groupMoneyByMonth(paidPayments, "amount", 6);
 
   return (
     <main className="min-h-screen bg-[#030303] text-white">
@@ -193,14 +200,15 @@ export default async function AdminPage() {
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Metric icon={Wallet} label="Ingresos totales" value={formatDop(revenue)} detail={`${paidPayments.length} pagos completados`} />
-                  <Metric icon={ShoppingBag} label="Ventas hoy" value={paidPayments.length} detail={`${conversion}% conversion`} />
-                  <Metric icon={Music2} label="Beats vendidos" value={soldProducts} detail={`${beatProducts.length} instrumentales activos`} />
+                  <Metric icon={Wallet} label="Ingresos totales" value={formatDop(revenue)} detail={`${totalPayments} pagos registrados`} />
+                  <Metric icon={ShoppingBag} label="Ventas / ordenes" value={totalOrders} detail={`${conversion}% conversion`} />
+                  <Metric icon={Music2} label="Productos" value={totalProducts} detail={`${beatProducts.length} instrumentales activos`} />
                   <Metric icon={CalendarDays} label="Reservas" value={bookings.length} detail={`${pendingBookings} pendientes`} />
-                  <Metric icon={Users} label="Clientes activos" value={activity.activeCount} detail={`${users.length || "Modo local"} registrados`} />
-                  <Metric icon={Activity} label="Streams / plays" value={pageViews.reduce((sum, page) => sum + page.count, 0)} detail="Actividad reciente" />
-                  <Metric icon={CreditCard} label="Stripe" value="OFF" detail="Desactivado en checkout" />
+                  <Metric icon={Users} label="Usuarios registrados" value={totalUsers} detail={`${usersToday} hoy / ${activity.activeCount} activos`} />
+                  <Metric icon={Activity} label="Visitas / plays" value={totalPageViews} detail="Page views reales en Neon" />
+                  <Metric icon={CreditCard} label="Stripe" value={stripeMode} detail="Estado de credenciales" />
                   <Metric icon={Wallet} label="PayPal" value={paypalMode} detail="Metodo adicional" />
+                  <Metric icon={Cloud} label="Database" value={databaseMode} detail="Conexion usada por produccion" />
                 </div>
               </div>
             </section>
@@ -214,12 +222,15 @@ export default async function AdminPage() {
                   </div>
                   <button className="rounded-xl border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-bold">Export CSV</button>
                 </div>
-                <div className="mt-6 flex h-64 items-end gap-2 rounded-2xl border border-white/10 bg-black/40 p-4">
-                  {[48, 72, 38, 86, 64, 91, 55, 78, 44, 96, 68, 88].map((height, index) => (
-                    <div key={index} className="flex flex-1 items-end">
-                      <div className="w-full rounded-t-xl bg-gradient-to-t from-red-900 via-red-500 to-amber-300 shadow-[0_0_24px_rgba(255,0,32,0.25)]" style={{ height: `${height}%` }} />
-                    </div>
-                  ))}
+                <div className="mt-6 grid gap-5 lg:grid-cols-3">
+                  <MiniChart title="Ventas por dia" data={salesByDay} formatter={formatDop} />
+                  <MiniChart title="Registros por dia" data={registrationsByDay} />
+                  <MiniChart title="Ingresos por mes" data={revenueByMonth} formatter={formatDop} />
+                </div>
+                <div className="mt-5 grid gap-3 md:grid-cols-3">
+                  <Metric icon={Activity} label="Conversion rate" value={`${conversion}%`} detail={`${paidPayments.length} pagos / ${orders.length} ordenes`} />
+                  <Metric icon={Users} label="Nuevos hoy" value={usersToday} detail="Registros reales" />
+                  <Metric icon={Activity} label="Activos ahora" value={activity.activeCount} detail="Ultimos 5 minutos" />
                 </div>
               </div>
               <div className="grid gap-4">
@@ -307,13 +318,14 @@ export default async function AdminPage() {
 
             <section id="customers" className="grid gap-6 xl:grid-cols-2">
               <div className="panel p-5 sm:p-6">
-                <SectionTitle title="Usuarios activos ahora" text="Visitantes vistos en los ultimos 5 minutos." badge={`${activity.activeCount} online`} />
+                <SectionTitle title="Customers reales" text="Usuarios registrados en Neon production." badge={`${totalUsers} registrados`} />
                 <div className="mt-5 space-y-3">
-                  {activity.active.length === 0 ? <Empty text="Sin visitantes activos registrados." /> : null}
-                  {activity.active.map((item) => (
-                    <div key={item.visitorId} className="rounded-2xl border border-white/10 bg-black/35 p-4">
-                      <p className="font-bold">{item.name || item.email || "Visitante anonimo"}</p>
-                      <p className="mt-1 text-sm text-white/50">{item.path} / {item.role || "PUBLIC"} / {timeAgo(item.lastSeen)}</p>
+                  {users.length === 0 ? <Empty text="Sin usuarios registrados todavia." /> : null}
+                  {users.map((user) => (
+                    <div key={user.id} className="rounded-2xl border border-white/10 bg-black/35 p-4">
+                      <p className="font-bold">{user.name || user.email}</p>
+                      <p className="mt-1 text-sm text-white/50">{user.email} / {user.role} / {formatAdminDate(user.createdAt)}</p>
+                      <p className="mt-1 text-xs text-white/35">{user._count?.orders || 0} ordenes / {user._count?.products || 0} productos / {user._count?.pageViews || 0} visitas</p>
                     </div>
                   ))}
                 </div>
@@ -461,6 +473,29 @@ function Metric({ icon: Icon, label, value, detail }: { icon: any; label: string
   );
 }
 
+function MiniChart({ title, data, formatter }: { title: string; data: Array<{ label: string; value: number }>; formatter?: (value: number) => string }) {
+  const max = Math.max(...data.map((item) => item.value), 1);
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-black text-white">{title}</p>
+        <span className="text-xs font-bold text-studio-gold">{formatter ? formatter(data.reduce((sum, item) => sum + item.value, 0)) : data.reduce((sum, item) => sum + item.value, 0)}</span>
+      </div>
+      <div className="mt-4 flex h-40 items-end gap-1.5">
+        {data.map((item) => (
+          <div key={item.label} className="group flex flex-1 items-end" title={`${item.label}: ${formatter ? formatter(item.value) : item.value}`}>
+            <div className="w-full rounded-t-lg bg-gradient-to-t from-red-900 via-red-500 to-amber-300 shadow-[0_0_20px_rgba(255,0,32,0.2)] transition group-hover:brightness-125" style={{ height: `${Math.max(4, (item.value / max) * 100)}%` }} />
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex justify-between text-[10px] font-bold uppercase tracking-[0.12em] text-white/32">
+        <span>{data[0]?.label}</span>
+        <span>{data[data.length - 1]?.label}</span>
+      </div>
+    </div>
+  );
+}
+
 function TrackCard({ product }: { product: any }) {
   return (
     <article className="group overflow-hidden rounded-2xl border border-white/10 bg-black/40 shadow-[0_22px_70px_rgba(0,0,0,0.26)] transition hover:-translate-y-1 hover:border-red-400/35 hover:shadow-[0_24px_90px_rgba(255,0,34,0.14)]">
@@ -580,12 +615,74 @@ function getPageViews(activity: Array<{ path: string }>) {
   return Array.from(pages.values()).sort((a, b) => b.count - a.count).slice(0, 6);
 }
 
-function timeAgo(value: string) {
-  const diff = Date.now() - new Date(value).getTime();
-  if (!Number.isFinite(diff) || diff < 60_000) return "Ahora";
-  const minutes = Math.floor(diff / 60_000);
-  if (minutes < 60) return `${minutes} min`;
-  return `${Math.floor(minutes / 60)} h`;
+function groupCountByDay(items: Array<{ createdAt: Date | string }>, days: number) {
+  const labels = buildDayBuckets(days);
+  const map = new Map(labels.map((label) => [label, 0]));
+  items.forEach((item) => {
+    const label = dayLabel(item.createdAt);
+    if (map.has(label)) map.set(label, (map.get(label) || 0) + 1);
+  });
+  return labels.map((label) => ({ label, value: map.get(label) || 0 }));
+}
+
+function groupMoneyByDay(items: Array<Record<string, any>>, field: string, days: number) {
+  const labels = buildDayBuckets(days);
+  const map = new Map(labels.map((label) => [label, 0]));
+  items.forEach((item) => {
+    const label = dayLabel(item.createdAt);
+    if (map.has(label)) map.set(label, (map.get(label) || 0) + Number(item[field] || 0));
+  });
+  return labels.map((label) => ({ label, value: map.get(label) || 0 }));
+}
+
+function groupMoneyByMonth(items: Array<Record<string, any>>, field: string, months: number) {
+  const labels = buildMonthBuckets(months);
+  const map = new Map(labels.map((label) => [label, 0]));
+  items.forEach((item) => {
+    const label = monthLabel(item.createdAt);
+    if (map.has(label)) map.set(label, (map.get(label) || 0) + Number(item[field] || 0));
+  });
+  return labels.map((label) => ({ label, value: map.get(label) || 0 }));
+}
+
+function buildDayBuckets(days: number) {
+  return Array.from({ length: days }, (_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (days - index - 1));
+    return dayLabel(date);
+  });
+}
+
+function buildMonthBuckets(months: number) {
+  return Array.from({ length: months }, (_, index) => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - (months - index - 1));
+    return monthLabel(date);
+  });
+}
+
+function dayLabel(value: Date | string) {
+  const date = typeof value === "string" ? new Date(value) : value;
+  return date.toLocaleDateString("es-DO", { month: "2-digit", day: "2-digit" });
+}
+
+function monthLabel(value: Date | string) {
+  const date = typeof value === "string" ? new Date(value) : value;
+  return date.toLocaleDateString("es-DO", { month: "short" });
+}
+
+function getStripeMode() {
+  const key = process.env.STRIPE_SECRET_KEY || "";
+  if (key.startsWith("sk_live_")) return "LIVE";
+  if (key.startsWith("sk_test_")) return "TEST";
+  return "OFF";
+}
+
+function getDatabaseMode() {
+  const url = process.env.DATABASE_URL || "";
+  if (/neon\.tech/i.test(url)) return "NEON";
+  if (/localhost|127\.0\.0\.1/i.test(url)) return "LOCAL";
+  return url ? "REMOTE" : "OFF";
 }
 
 function inferPaymentMethod(sessionId?: string | null) {
